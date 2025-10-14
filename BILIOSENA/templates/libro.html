@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrar Elemento</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/libro.css') }}">
+</head>
+
+<body>
+  <div class="container">
+    <h2>Registrar Nuevo Elemento</h2>
+    <form action="/api/libros" method="POST" enctype="multipart/form-data">
+      
+      <label for="titulo">Título del libro</label>
+      <input type="text" name="titulo" required />
+
+      <label for="autor">Autor</label>
+      <input type="text" name="autor" required />
+
+      <label for="isbn">ISBN</label>
+      <input type="text" name="isbn" required />
+
+      <label for="editorial">Editorial</label>
+      <input type="text" name="editorial" required />
+
+      <label for="anio_publicacion">Año de publicación</label>
+      <input type="number" name="anio_publicacion" min="1000" max="2099" required />
+
+      <label for="categoria">Categoría</label>
+      <select name="categoria" required>
+        <option value="Libros">Libros</option>
+      </select>
+
+      <label for="subcategoria">Subcategoría</label>
+      <select name="subcategoria" required>
+        <option value="">-- Selecciona --</option>
+        <option value="Literatura">Literatura</option>
+        <option value="Ciencia">Ciencia</option>
+        <option value="Historia">Historia</option>
+        <option value="Tecnología">Tecnología</option>
+        <option value="Arte">Arte</option>
+      </select>
+
+      <label for="descripcion">Descripción</label>
+      <textarea name="descripcion" rows="4" required></textarea>
+
+      <div class="row">
+        <div>
+          <label for="estado_disponibilidad">Disponibilidad</label>
+          <select name="estado_disponibilidad" required>
+            <option value="Disponible">Disponible</option>
+            <option value="Prestado">Prestado</option>
+          </select>
+        </div>
+        <div>
+          <label for="estado_elemento">Estado del elemento</label>
+          <select name="estado_elemento" required>
+            <option value="Buen estado">Buen estado</option>
+            <option value="Regular">Regular</option>
+            <option value="Dañado">Dañado</option>
+            <option value="Inhabilitado">Inhabilitado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="stock">Stock total</label>
+          <input type="number" name="stock" min="0" required />
+        </div>
+        <div>
+          <label for="cantidad_disponible">Cantidad disponible</label>
+          <input type="number" name="cantidad_disponible" min="0" required />
+        </div>
+      </div>
+
+      <label for="cantidad_prestado">Veces prestado</label>
+      <input type="number" name="cantidad_prestado" min="0" value="0" readonly />
+
+      <label for="imagen">Imagen de portada</label>
+      <input type="file" name="imagen" accept="image/*" />
+
+      <button type="submit">Guardar libro</button>
+    </form>
+  </div>
+</body>
+</html>

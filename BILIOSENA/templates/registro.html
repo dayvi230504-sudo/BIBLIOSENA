@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Formulario de Registro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/registro.css') }}">
+</head>
+<body>
+    <div class="form-container">
+        <h2>INGRESE INFORMACION</h2>
+        <form action="#" method="post">
+            <label for="nombre">NOMBRE COMPLETO</label>
+            <input type="text" id="nombre" name="nombre" required>
+
+            <label for="tipo_documento">TIPO DE DOCUMENTO</label>
+            <select id="tipo_documento" name="tipo_documento" required>
+                <option value="">Seleccione</option>
+                <option value="cedula">Cédula de Ciudadanía</option>
+                <option value="tarjeta">Tarjeta de Identidad</option>
+                <option value="extranjera">Cédula de Extranjería</option>
+                <option value="nit">NIT</option>
+            </select>
+
+            <label for="ficha">NUMERO DE FICHA</label>
+            <input type="text" id="ficha" name="ficha" required>
+
+            <label for="documento">NUMERO DE DOCUMENTO</label>
+            <input type="text" id="documento" name="documento" required>
+
+            <label for="correo">CORREO</label>
+            <input type="email" id="correo" name="correo" required>
+
+            <label for="telefono">NUMERO DE TELEFONO</label>
+            <input type="text" id="telefono" name="telefono" required>
+
+            <label for="tipo_usuario">TIPO DE USUARIO</label>
+            <select id="tipo_usuario" name="tipo_usuario" required>
+                <option value="">Seleccione</option>
+                <option value="aprendiz">Aprendiz</option>
+                <option value="instructor">Instructor</option>
+            </select>
+
+            <div class="terminos">
+                <input type="checkbox" id="acepta" name="acepta" required>
+                <label for="acepta">Aceptar términos</label>
+            </div>
+
+            <button type="submit">ENVIAR</button>
+        </form>
+    </div>
+</body>
+</html>

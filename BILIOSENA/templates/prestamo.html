@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitar Préstamo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/prestamo.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>Solicitar Préstamo</h2>
+    <form action="/prestamos" method="POST">
+      <div class="form-group">
+        <label for="id_usuario">ID Usuario:</label>
+        <input type="text" id="id_usuario" name="id_usuario" required>
+      </div>
+
+      <div class="form-group">
+        <label for="id_elemento">ID Elemento:</label>
+        <input type="text" id="id_elemento" name="id_elemento" required>
+      </div>
+
+      <div class="form-group">
+        <label for="fecha_prestamo">Fecha de Préstamo:</label>
+        <input type="date" id="fecha_prestamo" name="fecha_prestamo" required>
+      </div>
+
+      <div class="form-group">
+        <label for="fecha_devolucion">Fecha de Devolución:</label>
+        <input type="date" id="fecha_devolucion" name="fecha_devolucion" required>
+      </div>
+
+      <div class="form-group">
+        <label for="observaciones">Observaciones:</label>
+        <textarea id="observaciones" name="observaciones" rows="3"></textarea>
+      </div>
+
+      <button type="submit">Solicitar Préstamo</button>
+    </form>
+  </div>
+</body>
+</html>

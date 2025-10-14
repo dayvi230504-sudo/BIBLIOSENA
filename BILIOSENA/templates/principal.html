@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Biblioteca SENA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+</head>
+<body>
+
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <div class="buscador">
+      <input type="text" placeholder="Buscar">
+      <button><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/></svg></button>
+    </div>
+    <div class="usuario">
+      <span>Andres Vergel</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
+    </div>
+  </header>
+  <nav class="menu">
+    <a href="prestamo.html"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M5 15q-.425 0-.712-.288T4 14v-1H3q-.425 0-.712-.288T2 12t.288-.712T3 11h1v-1q0-.425.288-.712T5 9t.713.288T6 10v1h1q.425 0 .713.288T8 12t-.288.713T7 13H6v1q0 .425-.288.713T5 15m9 6V3h6q.825 0 1.413.588T22 5v14q0 .825-.587 1.413T20 21zm-8 0q-.825 0-1.412-.587T4 19v-1.1q0-.4.3-.663T5 17q2.075 0 3.538-1.45T10 12T8.537 8.45T5 7q-.4 0-.7-.25T4 6.1V5q0-.825.588-1.412T6 3h6v18z"/></svg>
+    <a href="libro.html"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 6a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1zm1.5 1.5h7v-1h-7zM4 4.5A2.5 2.5 0 0 1 6.5 2H18a2.5 2.5 0 0 1 2.5 2.5v7.232a6.5 6.5 0 0 0-1.5-.558V4.5a1 1 0 0 0-1-1H6.5a1 1 0 0 0-1 1V18h5.519q.061.782.294 1.5H5.5a1 1 0 0 0 1 1h5.232A6.5 6.5 0 0 0 12.81 22H6.5A2.5 2.5 0 0 1 4 19.5zm19 13a5.5 5.5 0 1 0-11 0a5.5 5.5 0 0 0 11 0m-5 .5l.001 2.503a.5.5 0 1 1-1 0V18h-2.505a.5.5 0 0 1 0-1H17v-2.5a.5.5 0 1 1 1 0V17h2.497a.5.5 0 0 1 0 1z"/></svg></a>
+    <a href="#">Novedades</a>
+    <a href="#">Libros</a>
+    <div class="dropdown">
+      <button class="dropdown__toggle" id="catToggle">Categorías</button>
+      <div class="dropdown__menu" id="catMenu">
+        <a href="#">Todas</a>
+        <a href="ambiental.html">Control Ambiental</a>
+        <a href="#">Ciencia</a>
+        <a href="#">Historia</a>
+        <a href="#">Tecnología</a>
+        <a href="#">Arte</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="content">
+    <h2 style="margin-top:8px">NUEVOS TÍTULOS</h2>
+    <section class="carousel" aria-label="Carrusel de libros">
+      <button type="button" class="carousel__btn carousel__btn--prev" id="prevBtn" aria-label="Anterior">❮</button>
+      <div class="carousel__viewport" id="carouselViewport">
+        <div class="carousel__track" id="carouselTrack">
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=1'">
+            <div class="book__image"><img src="/static/uploads/libro1.jpg" alt="La era de los pioneros"></div>
+            <div class="book__overlay">
+              <h3>LA ERA DE LOS PIONEROS</h3>
+              <p>TRIGUERO MORENO, GUILLERMO</p>
+              <p>UNIVERSITAT OBERTA D CATALUNYA</p>
+              <p>CINE</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=2'">
+            <div class="book__image"><img src="/static/uploads/libro2.jpg" alt="Con tantito epazote"></div>
+            <div class="book__overlay">
+              <h3>CON TANTITO EPAZOTE SE COMPONE</h3>
+              <p>BOSCH, PEDRO</p>
+              <p>FONDO DE CULTURA ECONOMICA</p>
+              <p>NARRATIVA LATINOAMERICANA</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=3'">
+            <div class="book__image"><img src="/static/uploads/libro3.jpg" alt="Diseñadora en NY"></div>
+            <div class="book__overlay">
+              <h3>UNA DISEÑADORA EN NUEVA YORK</h3>
+              <p>TRIGUERO MORENO, GUILLERMO</p>
+              <p>FONDO DE CULTURA ECONOMICA</p>
+              <p>EDITORIAL CLUB UNIVERSITARIO (ECU)</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=4'">
+            <div class="book__image"><img src="/static/uploads/libro4.jpg" alt="RSEI"></div>
+            <div class="book__overlay">
+              <h3>RSEI</h3>
+              <p>RSEI</p>
+              <p>EDICIONES UNIVERSIDAD SALAMANCA</p>
+              <p>LENGUA Y LINGÜÍSTICA</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=5'">
+            <div class="book__image"><img src="/static/uploads/libro5.jpg" alt="Libro 5"></div>
+            <div class="book__overlay">
+              <h3>LIBRO 5</h3>
+              <p>AUTOR</p>
+              <p>EDITORIAL</p>
+              <p>CATEGORÍA</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=6'">
+            <div class="book__image"><img src="/static/uploads/libro6.jpg" alt="Libro 6"></div>
+            <div class="book__overlay">
+              <h3>LIBRO 6</h3>
+              <p>AUTOR</p>
+              <p>EDITORIAL</p>
+              <p>CATEGORÍA</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=7'">
+            <div class="book__image"><img src="/static/uploads/libro7.jpg" alt="Libro 7"></div>
+            <div class="book__overlay">
+              <h3>LIBRO 7</h3>
+              <p>AUTOR</p>
+              <p>EDITORIAL</p>
+              <p>CATEGORÍA</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=8'">
+            <div class="book__image"><img src="/static/uploads/libro8.jpg" alt="Libro 8"></div>
+            <div class="book__overlay">
+              <h3>LIBRO 8</h3>
+              <p>AUTOR</p>
+              <p>EDITORIAL</p>
+              <p>CATEGORÍA</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=9'">
+            <div class="book__image"><img src="/static/uploads/libro9.jpg" alt="Libro 9"></div>
+            <div class="book__overlay">
+              <h3>LIBRO 9</h3>
+              <p>AUTOR</p>
+              <p>EDITORIAL</p>
+              <p>CATEGORÍA</p>
+            </div>
+          </article>
+          <article class="book" onclick="window.location.href='detalle_libro.html?id=10'">
+            <div class="book__image"><img src="/static/uploads/libro10.jpg" alt="Libro 10"></div>
+            <div class="book__overlay">
+              <h3>LIBRO 10</h3>
+              <p>AUTOR</p>
+              <p>EDITORIAL</p>
+              <p>CATEGORÍA</p>
+            </div>
+          </article>
+        </div>
+      </div>
+      <button type="button" class="carousel__btn carousel__btn--next" id="nextBtn" aria-label="Siguiente">❯</button>
+    </section>
+  </main>
+  <footer class="pie">
+    <a href="#">Listado de editoriales</a>
+    <a href="#">Contacto</a>
+    <a href="#">Ayuda</a>
+  </footer>
+</body>
+<script src="/static/js/main.js" defer></script>
+</html>
+
+  
