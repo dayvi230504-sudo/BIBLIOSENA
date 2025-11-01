@@ -31,7 +31,8 @@
       
       <div class="libro-info">
         <h1 id="libro-titulo">LA ERA DE LOS PIONEROS</h1>
-        <p class="autor">Por <strong id="libro-autor">TRIGUERO MORENO, GUILLERMO</strong></p>
+        <p class="autor libro-field">Por <strong id="libro-autor">TRIGUERO MORENO, GUILLERMO</strong></p>
+        <p class="equipo-field" style="display:none;"><strong id="equipo-marca-modelo">-</strong></p>
         
         <div class="disponibilidad">
           <span class="estado disponible">✓ Disponible</span>
@@ -39,7 +40,7 @@
         </div>
 
         <div class="acciones">
-          <button class="btn-prestamo">
+          <button class="btn-prestamo" id="btnSolicitar">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             Solicitar Préstamo
           </button>
@@ -49,9 +50,10 @@
         </div>
 
         <div class="detalles-tecnicos">
-          <h3>Información del Libro</h3>
-          <div class="info-grid">
-            <div class="info-item">
+          <h3 id="titulo-detalles">Información del Libro</h3>
+          <div class="info-grid" id="info-grid">
+            <!-- Campos para libros -->
+            <div class="info-item libro-field">
               <span class="label">Editorial:</span>
               <span id="libro-editorial">UNIVERSITAT OBERTA D CATALUNYA</span>
             </div>
@@ -59,21 +61,30 @@
               <span class="label">Categoría:</span>
               <span id="libro-categoria">CINE</span>
             </div>
-            <div class="info-item">
+            <div class="info-item libro-field">
               <span class="label">ISBN:</span>
               <span id="libro-isbn">978-84-9788-XXX-X</span>
             </div>
-            <div class="info-item">
+            <div class="info-item libro-field">
               <span class="label">Año:</span>
               <span id="libro-año">2023</span>
             </div>
-            <div class="info-item">
+            <div class="info-item libro-field">
               <span class="label">Páginas:</span>
-              <span>245</span>
+              <span id="libro-paginas">245</span>
+            </div>
+            <!-- Campos para equipos/PCs -->
+            <div class="info-item equipo-field" style="display:none;">
+              <span class="label">Código de Inventario:</span>
+              <span id="equipo-codigo">-</span>
+            </div>
+            <div class="info-item equipo-field" style="display:none;">
+              <span class="label">Subcategoría:</span>
+              <span id="equipo-subcategoria">-</span>
             </div>
             <div class="info-item">
               <span class="label">Estado:</span>
-              <span class="estado-libro">Buen estado</span>
+              <span class="estado-libro" id="libro-estado">Buen estado</span>
             </div>
           </div>
         </div>
@@ -221,18 +232,145 @@
       }
     };
 
-    // Cargar datos del libro
-    if (libroId && libros[libroId]) {
-      const libro = libros[libroId];
-      document.getElementById('libro-titulo').textContent = libro.titulo;
-      document.getElementById('libro-autor').textContent = libro.autor;
-      document.getElementById('libro-editorial').textContent = libro.editorial;
-      document.getElementById('libro-categoria').textContent = libro.categoria;
-      document.getElementById('libro-portada').src = libro.imagen;
-      document.getElementById('libro-isbn').textContent = libro.isbn;
-      document.getElementById('libro-año').textContent = libro.año;
-      document.getElementById('libro-descripcion').textContent = libro.descripcion;
+    // Intentar cargar datos desde la API y hacer fallback a datos estáticos
+    async function cargarDesdeAPI(id) {
+      try {
+        const res = await fetch(`/api/libros/${id}`);
+        if (!res.ok) return false;
+        const elemento = await res.json();
+        
+        // Detectar si es un equipo/PC o un libro
+        const categoria = (elemento.categoria || '').toLowerCase();
+        const esEquipo = categoria.includes('equipo') || 
+                        categoria.includes('informático') || 
+                        categoria.includes('pc') ||
+                        categoria === 'tablets' || 
+                        categoria === 'proyectores';
+        
+        // Actualizar título
+        document.getElementById('libro-titulo').textContent = elemento.titulo || '';
+        
+        // Mostrar/ocultar campos según tipo
+        if (esEquipo) {
+          // Es un equipo/PC
+          document.querySelector('.autor.libro-field').style.display = 'none';
+          const equipoMarca = document.querySelector('.equipo-field');
+          if (equipoMarca) equipoMarca.style.display = 'block';
+          document.getElementById('equipo-marca-modelo').textContent = elemento.titulo || '';
+          
+          // Ocultar campos de libro
+          document.querySelectorAll('.libro-field').forEach(el => el.style.display = 'none');
+          // Mostrar campos de equipo
+          document.querySelectorAll('.equipo-field').forEach(el => el.style.display = 'block');
+          
+          // Actualizar título de sección
+          document.getElementById('titulo-detalles').textContent = 'Información del Equipo';
+          
+          // Llenar campos de equipo
+          document.getElementById('equipo-codigo').textContent = elemento.codigo_inventario || '-';
+          document.getElementById('equipo-subcategoria').textContent = elemento.subcategoria || '-';
+        } else {
+          // Es un libro
+          document.querySelector('.autor.libro-field').style.display = 'block';
+          document.querySelector('.equipo-field')?.style.setProperty('display', 'none');
+          
+          // Mostrar campos de libro
+          document.querySelectorAll('.libro-field').forEach(el => el.style.display = 'block');
+          // Ocultar campos de equipo
+          document.querySelectorAll('.equipo-field').forEach(el => el.style.display = 'none');
+          
+          // Actualizar título de sección
+          document.getElementById('titulo-detalles').textContent = 'Información del Libro';
+          
+          // Llenar campos de libro
+          document.getElementById('libro-autor').textContent = elemento.autor || 'Sin autor';
+          document.getElementById('libro-editorial').textContent = elemento.editorial || '-';
+          document.getElementById('libro-isbn').textContent = elemento.isbn || '-';
+          document.getElementById('libro-año').textContent = elemento.anio_publicacion || '-';
+          // Las páginas no vienen de la BD, mantener valor por defecto
+        }
+        
+        // Campos comunes
+        document.getElementById('libro-categoria').textContent = elemento.categoria || '';
+        document.getElementById('libro-estado').textContent = elemento.estado_elemento || 'Buen estado';
+        const portada = elemento.imagen ? (elemento.imagen.startsWith('uploads/') ? `/${elemento.imagen}` : elemento.imagen) : '/static/uploads/libro1.jpg';
+        document.getElementById('libro-portada').src = portada;
+        document.getElementById('libro-descripcion').textContent = elemento.descripcion || '';
+        
+        return true;
+      } catch (e) {
+        console.error('Error cargando datos:', e);
+        return false;
+      }
     }
+
+    async function solicitarPrestamo(idElemento) {
+      // Obtener información del usuario actual
+      const token = localStorage.getItem('token');
+      let idUsuario = null;
+      let nombreUsuario = '';
+      let documentoUsuario = '';
+      
+      if (token && token.startsWith('user-')) {
+        idUsuario = token.replace('user-', '');
+        // Intentar obtener datos del usuario
+        try {
+          const resUser = await fetch(`/api/usuarios/${idUsuario}`);
+          if (resUser.ok) {
+            const userData = await resUser.json();
+            nombreUsuario = userData.nombre || '';
+            documentoUsuario = userData.documento || '';
+          }
+        } catch(e) {}
+      }
+      
+      if (!idUsuario) {
+        alert('Necesitas iniciar sesión para solicitar un préstamo');
+        window.location.href = 'login.html';
+        return;
+      }
+      try {
+        // Incluir id_usuario desde el inicio
+        let payload = { 
+          id_elemento: idElemento, 
+          id_usuario: idUsuario, // Incluir siempre el ID del usuario
+          fecha_prestamo: new Date().toISOString() 
+        };
+        let res = await fetch('/prestamos', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(payload) 
+        });
+        
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          alert(`✅ Solicitud enviada correctamente.\n\n👤 Usuario: ${nombreUsuario || 'N/A'}\n🆔 Cédula: ${documentoUsuario || idUsuario}\n\nQueda pendiente de aprobación por el administrador.`);
+          return;
+        }
+        alert('❌ ' + (data.error || 'No se pudo registrar el préstamo'));
+      } catch (e) {
+        alert('Error de red al solicitar el préstamo: ' + e.message);
+      }
+    }
+
+    (async () => {
+      if (libroId) {
+        const ok = await cargarDesdeAPI(libroId);
+        if (!ok && libros[libroId]) {
+          const libro = libros[libroId];
+          document.getElementById('libro-titulo').textContent = libro.titulo;
+          document.getElementById('libro-autor').textContent = libro.autor;
+          document.getElementById('libro-editorial').textContent = libro.editorial;
+          document.getElementById('libro-categoria').textContent = libro.categoria;
+          document.getElementById('libro-portada').src = libro.imagen;
+          document.getElementById('libro-isbn').textContent = libro.isbn;
+          document.getElementById('libro-año').textContent = libro.año;
+          document.getElementById('libro-descripcion').textContent = libro.descripcion;
+        }
+        const btn = document.getElementById('btnSolicitar');
+        if (btn) btn.addEventListener('click', () => solicitarPrestamo(libroId));
+      }
+    })();
   </script>
 </body>
 </html>

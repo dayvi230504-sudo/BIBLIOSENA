@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Equipos y PCs Disponibles</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+</head>
+<body>
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <div class="buscador">
+      <input type="text" id="buscadorInput" placeholder="Buscar equipos...">
+      <button id="btnBuscarEquipos"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/></svg></button>
+    </div>
+    <div class="usuario">
+      <span id="nombreUsuario">Usuario</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
+    </div>
+  </header>
+  <nav class="menu">
+    <a href="principal.html">Inicio</a>
+    <a href="libros.html">📚 Libros</a>
+    <a href="equipos.html" style="background:#667eea; color:white; border-radius:20px; padding:6px 12px;">💻 Equipos/PCs</a>
+    <div class="dropdown" data-context="equipos">
+      <button class="dropdown__toggle" id="catToggle">Categorías</button>
+      <div class="dropdown__menu" id="catMenu">
+        <a href="#" onclick="filtrarPorCategoria('')">Todas</a>
+        <a href="#" onclick="filtrarPorCategoria('Equipos Informáticos')">💻 Equipos Informáticos</a>
+        <a href="#" onclick="filtrarPorCategoria('Portátil')">💻 Portátiles</a>
+        <a href="#" onclick="filtrarPorCategoria('Desktop')">🖥️ Desktop</a>
+        <a href="#" onclick="filtrarPorCategoria('Tablet')">📱 Tablets</a>
+      </div>
+    </div>
+    <a id="linkMisPrestamos" href="mis_prestamos.html" style="display:none;">📚 Mis Préstamos</a>
+    <a id="linkMensajes" href="mensajes.html" style="display:none;">💬 Chat</a>
+    <a id="adminLink" href="admin.html" style="display:none">Admin</a>
+  </nav>
+
+  <main class="content">
+    <h2 style="margin-top:8px">💻 EQUIPOS Y PCs DISPONIBLES</h2>
+    <section class="carousel" aria-label="Carrusel de equipos">
+      <button type="button" class="carousel__btn carousel__btn--prev" id="prevBtn" aria-label="Anterior">❮</button>
+      <div class="carousel__viewport" id="carouselViewport">
+        <div class="carousel__track" id="carouselTrack"></div>
+      </div>
+      <button type="button" class="carousel__btn carousel__btn--next" id="nextBtn" aria-label="Siguiente">❯</button>
+    </section>
+  </main>
+
+  <script src="/static/js/main.js" defer></script>
+  <script>
+    let categoriaActual = 'Equipos Informáticos';
+    
+    async function cargarCarrusel() {
+      try {
+        const res = await fetch('/api/libros');
+        if (!res.ok) return;
+        const todosElementos = await res.json();
+        // Filtrar solo equipos/PCs (no libros)
+        const equipos = todosElementos.filter(l => {
+          const cat = (l.categoria || '').toLowerCase();
+          return cat.includes('equipo') || cat.includes('pc') || cat.includes('portátil') || cat.includes('desktop') || cat.includes('tablet');
+        });
+        
+        const track = document.getElementById('carouselTrack');
+        track.innerHTML = '';
+        
+        if (equipos.length === 0) {
+          track.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No hay equipos disponibles.</div>';
+          return;
+        }
+        
+        for (const equipo of equipos) {
+          const imgSrc = equipo.imagen ? (equipo.imagen.startsWith('uploads/') ? `/${equipo.imagen}` : equipo.imagen) : '/static/uploads/libro1.jpg';
+          const disponible = (equipo.cantidad_disponible || 0) > 0;
+          const art = document.createElement('article');
+          art.className = 'book';
+          art.onclick = () => window.location.href = `detalle_libro.html?id=${equipo.id}`;
+          art.innerHTML = `
+            <div class="book__image"><img src="${imgSrc}" alt="${equipo.titulo || ''}"></div>
+            ${disponible ? `<div style="position:absolute; top:8px; right:8px; background:#4caf50; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">✅ ${equipo.cantidad_disponible || 0}</div>` : ''}
+            <div class="book__overlay">
+              <h3>${equipo.titulo || ''}</h3>
+              ${equipo.codigo_inventario ? `<p><strong>Código:</strong> ${equipo.codigo_inventario}</p>` : ''}
+              <p>${equipo.categoria || ''}</p>
+              ${disponible ? `<p style="color:#4caf50; font-weight:600;">✅ ${equipo.cantidad_disponible || 0} disponible(s)</p>` : '<p style="color:#f44336;">❌ No disponible</p>'}
+            </div>`;
+          track.appendChild(art);
+        }
+      } catch (e) {
+        console.error('Error cargando equipos:', e);
+      }
+    }
+    
+    function filtrarPorCategoria(cat) {
+      categoriaActual = cat;
+      cargarCarrusel();
+    }
+    
+    document.getElementById('btnBuscarEquipos')?.addEventListener('click', () => {
+      const input = document.getElementById('buscadorInput');
+      if (input && input.value.trim()) {
+        realizarBusqueda(input.value);
+      } else {
+        cargarCarrusel();
+      }
+    });
+    
+    async function realizarBusqueda(consulta) {
+      const res = await fetch('/api/libros');
+      const todosElementos = res.ok ? await res.json() : [];
+      const equipos = todosElementos.filter(l => {
+        const cat = (l.categoria || '').toLowerCase();
+        return cat.includes('equipo') || cat.includes('pc') || cat.includes('portátil') || cat.includes('desktop') || cat.includes('tablet');
+      });
+      
+      const palabras = consulta.toLowerCase().split(' ').filter(p => p.length > 0);
+      const resultados = equipos.filter(equipo => {
+        const texto = `${equipo.titulo || ''} ${equipo.categoria || ''} ${equipo.codigo_inventario || ''}`.toLowerCase();
+        return palabras.some(pal => texto.includes(pal));
+      });
+      
+      const track = document.getElementById('carouselTrack');
+      track.innerHTML = '';
+      
+      if (resultados.length === 0) {
+        track.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No se encontraron equipos.</div>';
+        return;
+      }
+      
+      resultados.sort((a, b) => ((b.cantidad_disponible || 0) > 0 ? 1 : 0) - ((a.cantidad_disponible || 0) > 0 ? 1 : 0));
+      
+      for (const equipo of resultados) {
+        const imgSrc = equipo.imagen ? (equipo.imagen.startsWith('uploads/') ? `/${equipo.imagen}` : equipo.imagen) : '/static/uploads/libro1.jpg';
+        const disponible = (equipo.cantidad_disponible || 0) > 0;
+        const art = document.createElement('article');
+        art.className = 'book';
+        art.onclick = () => window.location.href = `detalle_libro.html?id=${equipo.id}`;
+        art.innerHTML = `
+          <div class="book__image"><img src="${imgSrc}" alt="${equipo.titulo || ''}"></div>
+          ${disponible ? `<div style="position:absolute; top:8px; right:8px; background:#4caf50; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">✅ ${equipo.cantidad_disponible || 0}</div>` : ''}
+          <div class="book__overlay">
+            <h3>${equipo.titulo || ''}</h3>
+            ${equipo.codigo_inventario ? `<p><strong>Código:</strong> ${equipo.codigo_inventario}</p>` : ''}
+            <p>${disponible ? `✅ ${equipo.cantidad_disponible || 0} disponible(s)` : '❌ No disponible'}</p>
+          </div>`;
+        track.appendChild(art);
+      }
+    }
+    
+    cargarCarrusel();
+    
+    // Mostrar links según autenticación
+    (function(){
+      const t = localStorage.getItem('token');
+      if (t === 'admin-token') {
+        const l = document.getElementById('adminLink');
+        if (l) l.style.display = 'inline-block';
+      } else if (t && t.startsWith('user-')) {
+        const linkMensajes = document.getElementById('linkMensajes');
+        if (linkMensajes) linkMensajes.style.display = 'inline-block';
+        const linkMisPrestamos = document.getElementById('linkMisPrestamos');
+        if (linkMisPrestamos) linkMisPrestamos.style.display = 'inline-block';
+      }
+    })();
+  </script>
+</body>
+</html>
+
