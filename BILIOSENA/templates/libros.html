@@ -19,9 +19,9 @@
     </div>
   </header>
   <nav class="menu">
-    <a href="principal.html">Inicio</a>
-    <a href="libros.html" style="background:#667eea; color:white; border-radius:20px; padding:6px 12px;">📚 Libros</a>
-    <a href="equipos.html">💻 Equipos/PCs</a>
+    <a href="{{ url_for('principal_page') }}">Inicio</a>
+    <a href="{{ url_for('libros_page') }}" style="background:#667eea; color:white; border-radius:20px; padding:6px 12px;">📚 Libros</a>
+    <a href="{{ url_for('equipos_page') }}">💻 Equipos/PCs</a>
     <div class="dropdown" data-context="libros">
       <button class="dropdown__toggle" id="catToggle">Categorías</button>
       <div class="dropdown__menu" id="catMenu">

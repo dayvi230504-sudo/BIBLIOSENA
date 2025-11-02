@@ -19,13 +19,13 @@
     </div>
   </header>
   <nav class="menu">
-    <a href="prestamo.html"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M5 15q-.425 0-.712-.288T4 14v-1H3q-.425 0-.712-.288T2 12t.288-.712T3 11h1v-1q0-.425.288-.712T5 9t.713.288T6 10v1h1q.425 0 .713.288T8 12t-.288.713T7 13H6v1q0 .425-.288.713T5 15m9 6V3h6q.825 0 1.413.588T22 5v14q0 .825-.587 1.413T20 21zm-8 0q-.825 0-1.412-.587T4 19v-1.1q0-.4.3-.663T5 17q2.075 0 3.538-1.45T10 12T8.537 8.45T5 7q-.4 0-.7-.25T4 6.1V5q0-.825.588-1.412T6 3h6v18z"/></svg>
+    <a href="{{ url_for('prestamo_page') }}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M5 15q-.425 0-.712-.288T4 14v-1H3q-.425 0-.712-.288T2 12t.288-.712T3 11h1v-1q0-.425.288-.712T5 9t.713.288T6 10v1h1q.425 0 .713.288T8 12t-.288.713T7 13H6v1q0 .425-.288.713T5 15m9 6V3h6q.825 0 1.413.588T22 5v14q0 .825-.587 1.413T20 21zm-8 0q-.825 0-1.412-.587T4 19v-1.1q0-.4.3-.663T5 17q2.075 0 3.538-1.45T10 12T8.537 8.45T5 7q-.4 0-.7-.25T4 6.1V5q0-.825.588-1.412T6 3h6v18z"/></svg>
     <a id="linkLibro" href="libro.html" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 6a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1zm1.5 1.5h7v-1h-7zM4 4.5A2.5 2.5 0 0 1 6.5 2H18a2.5 2.5 0 0 1 2.5 2.5v7.232a6.5 6.5 0 0 0-1.5-.558V4.5a1 1 0 0 0-1-1H6.5a1 1 0 0 0-1 1V18h5.519q.061.782.294 1.5H5.5a1 1 0 0 0 1 1h5.232A6.5 6.5 0 0 0 12.81 22H6.5A2.5 2.5 0 0 1 4 19.5zm19 13a5.5 5.5 0 1 0-11 0a5.5 5.5 0 0 0 11 0m-5 .5l.001 2.503a.5.5 0 1 1-1 0V18h-2.505a.5.5 0 0 1 0-1H17v-2.5a.5.5 0 1 1 1 0V17h2.497a.5.5 0 0 1 0 1z"/></svg></a>
     <a id="linkMensajes" href="mensajes.html" style="display:none;">💬 Chat</a>
     <a id="linkMisPrestamos" href="mis_prestamos.html" style="display:none;">📚 Mis Préstamos</a>
     <a href="https://www.sena.edu.co/es-co/Paginas/noticias" target="_blank" rel="noopener">Novedades (SENA)</a>
-    <a href="libros.html">📚 Libros</a>
-    <a href="equipos.html">💻 Equipos</a>
+    <a href="{{ url_for('libros_page') }}">📚 Libros</a>
+    <a href="{{ url_for('equipos_page') }}">💻 Equipos</a>
     <div class="dropdown" data-context="inicio">
       <button class="dropdown__toggle" id="catToggle">Categorías</button>
       <div class="dropdown__menu" id="catMenu">
@@ -62,8 +62,8 @@
           </div>
         </div>
         <div class="hero-actions">
-          <a href="libros.html" class="btn-hero btn-primary">Explorar Libros</a>
-          <a href="equipos.html" class="btn-hero btn-secondary">Ver Equipos</a>
+          <a href="{{ url_for('libros_page') }}" class="btn-hero btn-primary">Explorar Libros</a>
+          <a href="{{ url_for('equipos_page') }}" class="btn-hero btn-secondary">Ver Equipos</a>
         </div>
       </div>
     </section>
@@ -89,17 +89,17 @@
     <section class="section-accesos">
       <h2>🚀 Accesos Rápidos</h2>
       <div class="accesos-grid">
-        <a href="libros.html" class="acceso-card">
+        <a href="{{ url_for('libros_page') }}" class="acceso-card">
           <div class="acceso-icon">📚</div>
           <h3>Catálogo de Libros</h3>
           <p>Explora nuestra colección completa de libros</p>
         </a>
-        <a href="equipos.html" class="acceso-card">
+        <a href="{{ url_for('equipos_page') }}" class="acceso-card">
           <div class="acceso-icon">💻</div>
           <h3>Equipos Tecnológicos</h3>
           <p>Portátiles, tablets y equipos disponibles</p>
         </a>
-        <a href="prestamo.html" class="acceso-card">
+        <a href="{{ url_for('prestamo_page') }}" class="acceso-card">
           <div class="acceso-icon">📖</div>
           <h3>Solicitar Préstamo</h3>
           <p>Pide prestado un libro o equipo</p>
