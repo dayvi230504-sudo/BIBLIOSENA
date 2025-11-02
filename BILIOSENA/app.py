@@ -14,12 +14,13 @@ import os
 import uuid
 
 
-app = Flask(
-    __name__,
-    static_folder='static',
-    static_url_path='/static',
-    template_folder='templates',
-)
+app = Flask(__name__)
+app.secret_key = "bibliosena_secret"
+
+# 🔹 Usa la base SQLite temporalmente
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bibliosena.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
 # Configuración de seguridad
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev-key-por-defecto-cambiar-en-produccion")
