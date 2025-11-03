@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Biblioteca SENA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+</head>
+<body>
+
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <div class="buscador">
+      <input type="text" id="buscadorInput" placeholder="🤖 Buscar libros... (ej: tecnología, historia, agricultura)">
+      <button id="btnBuscarLibros"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/></svg></button>
+    </div>
+    <div class="usuario">
+      <span>Andres Vergel</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
+    </div>
+  </header>
+  <nav class="menu">
+    <a href="{{ url_for('prestamo_page') }}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M5 15q-.425 0-.712-.288T4 14v-1H3q-.425 0-.712-.288T2 12t.288-.712T3 11h1v-1q0-.425.288-.712T5 9t.713.288T6 10v1h1q.425 0 .713.288T8 12t-.288.713T7 13H6v1q0 .425-.288.713T5 15m9 6V3h6q.825 0 1.413.588T22 5v14q0 .825-.587 1.413T20 21zm-8 0q-.825 0-1.412-.587T4 19v-1.1q0-.4.3-.663T5 17q2.075 0 3.538-1.45T10 12T8.537 8.45T5 7q-.4 0-.7-.25T4 6.1V5q0-.825.588-1.412T6 3h6v18z"/></svg>
+    <a id="linkLibro" href="libro.html" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 6a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1zm1.5 1.5h7v-1h-7zM4 4.5A2.5 2.5 0 0 1 6.5 2H18a2.5 2.5 0 0 1 2.5 2.5v7.232a6.5 6.5 0 0 0-1.5-.558V4.5a1 1 0 0 0-1-1H6.5a1 1 0 0 0-1 1V18h5.519q.061.782.294 1.5H5.5a1 1 0 0 0 1 1h5.232A6.5 6.5 0 0 0 12.81 22H6.5A2.5 2.5 0 0 1 4 19.5zm19 13a5.5 5.5 0 1 0-11 0a5.5 5.5 0 0 0 11 0m-5 .5l.001 2.503a.5.5 0 1 1-1 0V18h-2.505a.5.5 0 0 1 0-1H17v-2.5a.5.5 0 1 1 1 0V17h2.497a.5.5 0 0 1 0 1z"/></svg></a>
+    <a id="linkMensajes" href="mensajes.html" style="display:none;">💬 Chat</a>
+    <a id="linkMisPrestamos" href="mis_prestamos.html" style="display:none;">📚 Mis Préstamos</a>
+    <a href="https://www.sena.edu.co/es-co/Paginas/noticias" target="_blank" rel="noopener">Novedades (SENA)</a>
+    <a href="{{ url_for('libros_page') }}">📚 Libros</a>
+    <a href="{{ url_for('equipos_page') }}">💻 Equipos</a>
+    <div class="dropdown" data-context="inicio">
+      <button class="dropdown__toggle" id="catToggle">Categorías</button>
+      <div class="dropdown__menu" id="catMenu">
+        <a href="#" onclick="filtrarPorCategoria('')">Todas</a>
+        <a href="#" onclick="filtrarPorCategoria('Libros')">📚 Libros</a>
+        <a href="#" onclick="filtrarPorCategoria('Equipos Informáticos')">💻 Equipos</a>
+        <a href="#" onclick="filtrarPorCategoria('Ciencia')">🔬 Ciencia</a>
+        <a href="#" onclick="filtrarPorCategoria('Historia')">📜 Historia</a>
+        <a href="#" onclick="filtrarPorCategoria('Tecnología')">💡 Tecnología</a>
+        <a href="#" onclick="filtrarPorCategoria('Literatura')">✍️ Literatura</a>
+      </div>
+    </div>
+    <a id="adminLink" href="admin.html" style="display:none">Admin</a>
+  </nav>
+
+  <main class="content">
+    <!-- Sección Hero / Presentación -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">📚 Bienvenido a BIBLIOSENA</h1>
+        <p class="hero-subtitle">Tu biblioteca digital del SENA. Descubre, presta y explora un mundo de conocimiento.</p>
+        <div class="hero-stats">
+          <div class="stat-card">
+            <div class="stat-number" id="totalLibros">-</div>
+            <div class="stat-label">📖 Libros Disponibles</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="totalEquipos">-</div>
+            <div class="stat-label">💻 Equipos Disponibles</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="totalDisponibles">-</div>
+            <div class="stat-label">✅ Elementos Activos</div>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <a href="{{ url_for('libros_page') }}" class="btn-hero btn-primary">Explorar Libros</a>
+          <a href="{{ url_for('equipos_page') }}" class="btn-hero btn-secondary">Ver Equipos</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Nuevos Títulos -->
+    <section class="section-novedades">
+      <div class="section-header">
+        <h2>✨ Nuevos Títulos</h2>
+        <p class="section-description">Descubre los últimos libros agregados a nuestra colección</p>
+      </div>
+      <div class="carousel-container">
+        <section class="carousel" aria-label="Carrusel de libros">
+          <button type="button" class="carousel__btn carousel__btn--prev" id="prevBtn" aria-label="Anterior">❮</button>
+          <div class="carousel__viewport" id="carouselViewport">
+            <div class="carousel__track" id="carouselTrack"></div>
+          </div>
+          <button type="button" class="carousel__btn carousel__btn--next" id="nextBtn" aria-label="Siguiente">❯</button>
+        </section>
+      </div>
+    </section>
+
+    <!-- Sección de Accesos Rápidos -->
+    <section class="section-accesos">
+      <h2>🚀 Accesos Rápidos</h2>
+      <div class="accesos-grid">
+        <a href="{{ url_for('libros_page') }}" class="acceso-card">
+          <div class="acceso-icon">📚</div>
+          <h3>Catálogo de Libros</h3>
+          <p>Explora nuestra colección completa de libros</p>
+        </a>
+        <a href="{{ url_for('equipos_page') }}" class="acceso-card">
+          <div class="acceso-icon">💻</div>
+          <h3>Equipos Tecnológicos</h3>
+          <p>Portátiles, tablets y equipos disponibles</p>
+        </a>
+        <a href="{{ url_for('prestamo_page') }}" class="acceso-card">
+          <div class="acceso-icon">📖</div>
+          <h3>Solicitar Préstamo</h3>
+          <p>Pide prestado un libro o equipo</p>
+        </a>
+        <a href="mis_prestamos.html" class="acceso-card" id="accesoMisPrestamos" style="display:none;">
+          <div class="acceso-icon">📋</div>
+          <h3>Mis Préstamos</h3>
+          <p>Consulta tus préstamos activos</p>
+        </a>
+      </div>
+    </section>
+  </main>
+  <footer class="pie">
+    <a href="#">Listado de editoriales</a>
+    <a href="#">Contacto</a>
+    <a href="#">Ayuda</a>
+  </footer>
+</body>
+<script src="/static/js/main.js" defer></script>
+<script>
+  let categoriaFiltro = '';
+  
+  // Cargar estadísticas
+  async function cargarEstadisticas() {
+    try {
+      const res = await fetch('/api/libros');
+      if (!res.ok) return;
+      const elementos = await res.json();
+      const libros = elementos.filter(e => (e.categoria || '').toLowerCase() === 'libros');
+      const equipos = elementos.filter(e => {
+        const cat = (e.categoria || '').toLowerCase();
+        return cat.includes('equipo') || cat.includes('pc') || cat.includes('portátil');
+      });
+      const disponibles = elementos.filter(e => (e.cantidad_disponible || 0) > 0);
+      
+      document.getElementById('totalLibros').textContent = libros.length;
+      document.getElementById('totalEquipos').textContent = equipos.length;
+      document.getElementById('totalDisponibles').textContent = disponibles.length;
+    } catch (e) {
+      console.error('Error cargando estadísticas:', e);
+    }
+  }
+  
+  // Cargar libros desde la API y poblar el carrusel (solo los más recientes)
+  async function cargarCarrusel() {
+    try {
+      const res = await fetch('/api/libros');
+      if (!res.ok) return;
+      const todosLibros = await res.json();
+      
+      // FILTRAR SOLO LIBROS (excluir equipos/PCs)
+      let libros = todosLibros.filter(l => {
+        const cat = (l.categoria || '').toLowerCase();
+        // Excluir equipos, PCs, tablets, proyectores - solo mostrar libros
+        const esEquipo = cat.includes('equipo') || 
+                        cat.includes('informático') || 
+                        cat.includes('pc') || 
+                        cat.includes('portátil') ||
+                        cat === 'tablets' || 
+                        cat === 'proyectores' ||
+                        cat === 'otros';
+        // Solo incluir si NO es equipo Y (es "libros" o está vacío/categoría indefinida que podría ser libro)
+        return !esEquipo && (cat === 'libros' || cat === '' || (!cat.includes('equipo') && !cat.includes('pc')));
+      });
+      
+      // Aplicar filtro de categoría si existe (solo para libros)
+      if (categoriaFiltro) {
+        libros = libros.filter(l => {
+          const cat = (l.categoria || '').toLowerCase();
+          const subcat = (l.subcategoria || '').toLowerCase();
+          const filtro = categoriaFiltro.toLowerCase();
+          // Si el filtro es específico de libros, aplicar
+          if (filtro === 'libros' || filtro === 'literatura' || filtro === 'ciencia' || filtro === 'historia' || filtro === 'tecnología' || filtro === 'arte') {
+            return cat === filtro || subcat === filtro || cat === 'libros';
+          }
+          return cat === filtro || subcat === filtro;
+        });
+      }
+      
+      // Ordenar por fecha de creación (más recientes primero) y tomar solo los últimos 10
+      libros.sort((a, b) => {
+        const fechaA = new Date(a.creado_en || 0);
+        const fechaB = new Date(b.creado_en || 0);
+        return fechaB - fechaA;
+      });
+      libros = libros.slice(0, 10);
+      
+      const track = document.getElementById('carouselTrack');
+      track.innerHTML = '';
+      
+      if (libros.length === 0) {
+        track.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No hay elementos disponibles en esta categoría.</div>';
+        return;
+      }
+      
+      for (const libro of libros) {
+        const imgSrc = libro.imagen ? (libro.imagen.startsWith('uploads/') ? `/${libro.imagen}` : libro.imagen) : '/static/uploads/libro1.jpg';
+        const disponible = (libro.cantidad_disponible || 0) > 0;
+        const art = document.createElement('article');
+        art.className = 'book';
+        art.onclick = () => window.location.href = `detalle_libro.html?id=${libro.id}`;
+        art.innerHTML = `
+          <div class="book__image"><img src="${imgSrc}" alt="${libro.titulo || ''}"></div>
+          ${disponible ? `<div style="position:absolute; top:8px; right:8px; background:#4caf50; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">✅</div>` : ''}
+          <div class="book__overlay">
+            <h3>${libro.titulo || ''}</h3>
+            <p>${libro.autor || ''}</p>
+            <p>${libro.editorial || ''}</p>
+            <p>${libro.categoria || ''}</p>
+            ${disponible ? `<p style="color:#4caf50; font-weight:600;">✅ Disponible</p>` : ''}
+          </div>`;
+        track.appendChild(art);
+      }
+    } catch (e) {
+      console.error('Error cargando carrusel:', e);
+    }
+  }
+  
+  function filtrarPorCategoria(cat) {
+    categoriaFiltro = cat;
+    cargarCarrusel();
+    // Cerrar dropdown
+    const dropdown = document.querySelector('.dropdown');
+    if (dropdown) dropdown.classList.remove('open');
+    const menu = document.getElementById('catMenu');
+    if (menu) menu.style.display = 'none';
+  }
+  
+  cargarEstadisticas();
+  cargarCarrusel();
+  
+  // Bot de búsqueda inteligente mejorado
+  async function buscarLibrosIA(consulta) {
+    try {
+      const res = await fetch('/api/libros');
+      const todosLibros = res.ok ? await res.json() : [];
+      
+      if (!consulta.trim()) {
+        // Si no hay búsqueda, mostrar solo disponibles
+        return todosLibros.filter(l => (l.cantidad_disponible || 0) > 0).slice(0, 20);
+      }
+      
+      // Búsqueda inteligente: busca en título, autor, categoría, subcategoría, descripción
+      const palabras = consulta.toLowerCase().split(' ').filter(p => p.length > 0);
+      const resultados = todosLibros.filter(libro => {
+        const texto = `${libro.titulo || ''} ${libro.autor || ''} ${libro.categoria || ''} ${libro.subcategoria || ''} ${libro.descripcion || ''}`.toLowerCase();
+        return palabras.some(pal => texto.includes(pal));
+      });
+      
+      // Ordenar: disponibles primero
+      resultados.sort((a, b) => {
+        const dispA = (a.cantidad_disponible || 0) > 0 ? 1 : 0;
+        const dispB = (b.cantidad_disponible || 0) > 0 ? 1 : 0;
+        return dispB - dispA;
+      });
+      
+      return resultados.slice(0, 20);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Mostrar sugerencias de búsqueda
+  function mostrarSugerencias() {
+    const sugerencias = [
+      '💡 Intenta buscar por: tecnología, agricultura, historia, ciencia, literatura',
+      '🔍 Puedes buscar por categoría, autor, título o palabras clave',
+      '📚 Escribe el nombre del libro o autor que buscas'
+    ];
+    const track = document.getElementById('carouselTrack');
+    if (track && track.children.length === 0) {
+      track.innerHTML = `<div style="padding:40px; text-align:center; color:#667eea;">
+        <h3 style="margin-bottom:16px;">🔍 Búsqueda Inteligente</h3>
+        <div style="font-size:14px; color:#666; line-height:1.8;">
+          ${sugerencias.join('<br>')}
+        </div>
+        <div style="margin-top:20px; padding:12px; background:#e3f2fd; border-radius:8px; font-size:13px;">
+          <strong>Ejemplos:</strong><br>
+          • "libros de tecnología"<br>
+          • "agricultura"<br>
+          • "ciencia ficción"
+        </div>
+      </div>`;
+    }
+  }
+
+  async function realizarBusqueda(consulta) {
+    const resultados = await buscarLibrosIA(consulta);
+    const track = document.getElementById('carouselTrack');
+    if (!track) return;
+    
+    track.innerHTML = '';
+    if (resultados.length === 0) {
+      track.innerHTML = `<div style="padding:40px; text-align:center; color:#666;">
+        <div style="font-size:18px; margin-bottom:12px;">🔍 No se encontraron libros</div>
+        <div style="font-size:14px; color:#999; margin-bottom:16px;">Intenta con otras palabras clave</div>
+        <div style="background:#f0f7ff; padding:16px; border-radius:8px; text-align:left; max-width:400px; margin:0 auto;">
+          <strong>💡 Sugerencias:</strong><br>
+          • Busca por categoría: tecnología, historia, ciencia<br>
+          • Busca por autor o título<br>
+          • Intenta palabras más generales
+        </div>
+      </div>`;
+      return;
+    }
+    
+    // Mostrar contador de resultados
+    const contador = document.createElement('div');
+    contador.style.cssText = 'padding:12px; background:#e3f2fd; border-radius:8px; margin-bottom:16px; text-align:center; font-weight:600; color:#1976d2;';
+    contador.textContent = `📚 ${resultados.length} resultado(s) encontrado(s)${consulta ? ` para "${consulta}"` : ''}`;
+    track.appendChild(contador);
+    
+    for (const libro of resultados) {
+      const imgSrc = libro.imagen ? (libro.imagen.startsWith('uploads/') ? `/${libro.imagen}` : libro.imagen) : '/static/uploads/libro1.jpg';
+      const disponible = (libro.cantidad_disponible || 0) > 0;
+      const art = document.createElement('article');
+      art.className = 'book';
+      art.onclick = () => window.location.href = `detalle_libro.html?id=${libro.id}`;
+      art.innerHTML = `
+        <div class="book__image"><img src="${imgSrc}" alt="${libro.titulo || ''}"></div>
+        <div style="position:absolute; top:8px; right:8px; background:${disponible ? '#4caf50' : '#f44336'}; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">
+          ${disponible ? '✅ Disponible' : '❌ Agotado'}
+        </div>
+        <div class="book__overlay">
+          <h3>${libro.titulo || ''}</h3>
+          <p>${libro.autor || ''}</p>
+          <p>${libro.editorial || ''}</p>
+          <p>${libro.categoria || ''}</p>
+          ${disponible ? `<p style="color:#4caf50; font-weight:600;">✅ ${libro.cantidad_disponible || 0} disponible(s)</p>` : ''}
+        </div>`;
+      track.appendChild(art);
+    }
+  }
+
+  document.getElementById('btnBuscarLibros')?.addEventListener('click', () => {
+    const input = document.getElementById('buscadorInput');
+    if (input) {
+      const valor = input.value.trim();
+      if (valor) {
+        realizarBusqueda(valor);
+      } else {
+        // Si está vacío, mostrar todos
+        cargarCarrusel();
+      }
+    }
+  });
+
+  document.getElementById('buscadorInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const valor = e.target.value.trim();
+      if (valor) {
+        realizarBusqueda(valor);
+      } else {
+        cargarCarrusel();
+      }
+    }
+  });
+
+  // Mostrar sugerencias si no hay búsqueda
+  setTimeout(mostrarSugerencias, 1000);
+
+  // Mostrar link Admin y agregar libro solo si es admin
+  // Mostrar mensajes para usuarios logueados
+  (function(){
+    const t = localStorage.getItem('token');
+    if (t === 'admin-token') {
+      const l = document.getElementById('adminLink');
+      if (l) l.style.display = 'inline-block';
+      const linkLibro = document.getElementById('linkLibro');
+      if (linkLibro) linkLibro.style.display = 'inline-block';
+    } else if (t && t.startsWith('user-')) {
+      const linkMensajes = document.getElementById('linkMensajes');
+      if (linkMensajes) linkMensajes.style.display = 'inline-block';
+      const linkMisPrestamos = document.getElementById('linkMisPrestamos');
+      if (linkMisPrestamos) linkMisPrestamos.style.display = 'inline-block';
+      const accesoMisPrestamos = document.getElementById('accesoMisPrestamos');
+      if (accesoMisPrestamos) accesoMisPrestamos.style.display = 'block';
+    }
+    
+    // Cargar nombre de usuario si está disponible
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        const nombreEl = document.querySelector('.usuario span');
+        if (nombreEl && user.name) nombreEl.textContent = user.name;
+      } catch (e) {}
+    }
+  })();
+</script>
+</html>
+
+  

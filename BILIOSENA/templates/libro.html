@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrar Elemento</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/libro.css') }}">
+  <style>
+    .tipo-selector {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding: 20px;
+      background: #f0f7ff;
+      border-radius: 12px;
+      border: 2px solid #667eea;
+    }
+    .tipo-option {
+      flex: 1;
+      padding: 16px;
+      border: 3px solid transparent;
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.3s;
+      font-weight: 600;
+      color: #333;
+    }
+    .tipo-option:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    }
+    .tipo-option.selected {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+    .form-section {
+      display: none;
+    }
+    .form-section.active {
+      display: block;
+    }
+    .campos-libro {
+      /* Campos específicos para libros */
+    }
+    .campos-pc {
+      /* Campos específicos para PCs */
+    }
+    .campo-condicional {
+      display: none;
+    }
+    .campo-condicional.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+    <div class="container">
+    <h2>Registrar Nuevo Elemento</h2>
+    
+    <!-- Selector de tipo simplificado -->
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="display:inline-flex; gap:16px; background:#f0f7ff; padding:20px; border-radius:12px; border:2px solid #667eea;">
+        <button type="button" class="tipo-option" data-tipo="libro" onclick="seleccionarTipo('libro')" style="padding:16px 32px; font-size:18px;">
+          📚 Libro
+        </button>
+        <button type="button" class="tipo-option" data-tipo="pc" onclick="seleccionarTipo('pc')" style="padding:16px 32px; font-size:18px;">
+          💻 Equipo/PC
+        </button>
+      </div>
+    </div>
+    
+    <form id="formRegistro" action="/api/libros" method="POST" enctype="multipart/form-data" style="display:none;">
+      <input type="hidden" name="tipo_elemento" id="tipoElemento" value="">
+      
+      <!-- Campos comunes -->
+      <label for="titulo">Título / Nombre del elemento</label>
+      <input type="text" name="titulo" id="titulo" required placeholder="Ej: 'Introducción a Python' (libro) o 'Portátil Dell Inspiron 15' (PC)" />
+      
+      <div id="camposLibro" class="campos-libro" style="display:none;">
+        <label for="autor">Autor</label>
+        <input type="text" name="autor" id="autor" placeholder="Nombre del autor del libro" />
+        
+        <label for="isbn">ISBN</label>
+        <input type="text" name="isbn" id="isbn" placeholder="ISBN del libro (opcional)" />
+        
+        <label for="editorial">Editorial</label>
+        <input type="text" name="editorial" id="editorial" placeholder="Editorial del libro" />
+        
+        <label for="anio_publicacion">Año de publicación</label>
+        <input type="number" name="anio_publicacion" id="anio_publicacion" min="1000" max="2099" placeholder="Año" />
+      </div>
+      
+      <div id="camposPC" class="campos-pc" style="display:none;">
+        <label for="marca">Marca / Fabricante</label>
+        <input type="text" name="marca" id="marca" placeholder="Ej: Dell, HP, Lenovo, Apple" />
+        
+        <label for="modelo">Modelo</label>
+        <input type="text" name="modelo" id="modelo" placeholder="Ej: Inspiron 15 3000, ThinkPad X1" />
+        
+        <label for="especificaciones">Especificaciones técnicas</label>
+        <textarea name="especificaciones" id="especificaciones" rows="4" placeholder="Ej: Intel Core i5, 8GB RAM, 256GB SSD, Windows 11"></textarea>
+        
+        <label for="numero_serie">Número de serie</label>
+        <input type="text" name="numero_serie" id="numero_serie" placeholder="Número de serie del equipo" />
+      </div>
+      
+      <label for="codigo_inventario">Código de inventario</label>
+      <input type="text" name="codigo_inventario" id="codigo_inventario" placeholder="Ej: LIB-001 (libro) o PC-001 (equipo)" required />
+      
+      <label for="categoria">Categoría</label>
+      <select name="categoria" id="categoria" required>
+        <option value="">-- Selecciona --</option>
+        <option value="Libros">Libros</option>
+        <option value="Equipos Informáticos">Equipos Informáticos</option>
+        <option value="Tablets">Tablets</option>
+        <option value="Proyectores">Proyectores</option>
+        <option value="Otros">Otros</option>
+      </select>
+      
+      <label for="subcategoria">Subcategoría</label>
+      <select name="subcategoria" id="subcategoria">
+        <option value="">-- Selecciona --</option>
+        <option value="Literatura">Literatura</option>
+        <option value="Ciencia">Ciencia</option>
+        <option value="Historia">Historia</option>
+        <option value="Tecnología">Tecnología</option>
+        <option value="Arte">Arte</option>
+        <option value="Programación">Programación</option>
+        <option value="Portátil">Portátil</option>
+        <option value="Desktop">Desktop</option>
+        <option value="Tablet">Tablet</option>
+      </select>
+      
+      <label for="descripcion">Descripción</label>
+      <textarea name="descripcion" id="descripcion" rows="4" required placeholder="Descripción detallada del elemento"></textarea>
+      
+      <div class="row">
+        <div>
+          <label for="estado_disponibilidad">Disponibilidad</label>
+          <select name="estado_disponibilidad" id="estado_disponibilidad" required>
+            <option value="Disponible">Disponible</option>
+            <option value="Prestado">Prestado</option>
+            <option value="Mantenimiento">Mantenimiento</option>
+            <option value="Inhabilitado">Inhabilitado</option>
+          </select>
+        </div>
+        <div>
+          <label for="estado_elemento">Estado físico del elemento</label>
+          <select name="estado_elemento" id="estado_elemento" required>
+            <option value="Buen estado">Buen estado</option>
+            <option value="Regular">Regular</option>
+            <option value="Dañado">Dañado</option>
+            <option value="Inhabilitado">Inhabilitado</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div>
+          <label for="stock">Stock total</label>
+          <input type="number" name="stock" id="stock" min="0" value="1" required />
+        </div>
+        <div>
+          <label for="cantidad_disponible">Cantidad disponible</label>
+          <input type="number" name="cantidad_disponible" id="cantidad_disponible" min="0" value="1" required />
+        </div>
+      </div>
+      
+      <label for="imagen">Imagen del elemento</label>
+      <input type="file" name="imagen" id="imagen" accept="image/*" />
+      <small style="color:#666; font-size:12px;">Sube una imagen del libro (portada) o del equipo/PC</small>
+      
+      <button type="submit">Guardar Elemento</button>
+    </form>
+  </div>
+  
+  <script>
+    let tipoSeleccionado = null;
+    
+    function seleccionarTipo(tipo) {
+      tipoSeleccionado = tipo;
+      
+      // Actualizar UI del selector
+      document.querySelectorAll('.tipo-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      document.querySelector(`[data-tipo="${tipo}"]`).classList.add('selected');
+      
+      // Mostrar formulario
+      const form = document.getElementById('formRegistro');
+      form.style.display = 'block';
+      
+      // Ocultar todos los campos condicionales
+      document.getElementById('camposLibro').style.display = 'none';
+      document.getElementById('camposPC').style.display = 'none';
+      
+      // Mostrar campos según el tipo
+      if (tipo === 'libro') {
+        document.getElementById('camposLibro').style.display = 'block';
+        document.getElementById('autor').setAttribute('required', 'required');
+        document.getElementById('editorial').setAttribute('required', 'required');
+        document.getElementById('categoria').value = 'Libros';
+        
+        // Quitar required de campos de PC
+        document.getElementById('marca').removeAttribute('required');
+        document.getElementById('modelo').removeAttribute('required');
+      } else if (tipo === 'pc') {
+        document.getElementById('camposPC').style.display = 'block';
+        document.getElementById('marca').setAttribute('required', 'required');
+        document.getElementById('modelo').setAttribute('required', 'required');
+        document.getElementById('categoria').value = 'Equipos Informáticos';
+        
+        // Quitar required de campos de libro
+        document.getElementById('autor').removeAttribute('required');
+        document.getElementById('editorial').removeAttribute('required');
+        document.getElementById('isbn').removeAttribute('required');
+      }
+      
+      // Actualizar tipo en el formulario
+      document.getElementById('tipoElemento').value = tipo;
+      
+      // Actualizar placeholder del título
+      const tituloInput = document.getElementById('titulo');
+      if (tipo === 'libro') {
+        tituloInput.placeholder = 'Ej: Introducción a Python, Historia de Colombia';
+      } else {
+        tituloInput.placeholder = 'Ej: Portátil Dell Inspiron 15, PC Desktop HP';
+      }
+    }
+    
+    // Manejar envío del formulario
+    document.getElementById('formRegistro').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (!tipoSeleccionado) {
+        alert('Por favor selecciona primero el tipo de elemento (Libro o PC)');
+        return;
+      }
+      
+      const formData = new FormData(e.target);
+      
+      try {
+        const res = await fetch('/api/libros', {
+          method: 'POST',
+          body: formData
+        });
+        
+        let data;
+        try {
+          const text = await res.text();
+          data = text ? JSON.parse(text) : {};
+        } catch (e) {
+          data = { error: 'Error al procesar respuesta del servidor' };
+        }
+        
+        if (res.ok && (data.ok !== false)) {
+          alert('✓ Elemento registrado correctamente');
+          e.target.reset();
+          tipoSeleccionado = null;
+          document.querySelectorAll('.tipo-option').forEach(opt => opt.classList.remove('selected'));
+          document.getElementById('formRegistro').style.display = 'none';
+        } else {
+          const errorMsg = data.error || `Error ${res.status}: ${res.statusText}` || 'Error desconocido';
+          alert('✗ Error al registrar: ' + errorMsg);
+          console.error('Error completo:', data);
+        }
+      } catch (err) {
+        alert('Error de conexión: ' + err.message);
+        console.error('Error:', err);
+      }
+    });
+  </script>
+</body>
+</html>
