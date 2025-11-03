@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes - Biblioteca SENA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+  <style>
+    .reporte-section {
+      background: #fff;
+      padding: 16px;
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .filtros {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .resultados {
+      margin-top: 16px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #e1e8ed;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <h2 style="margin-left:16px; flex:1;">Reportes</h2>
+    <button onclick="location.href='admin.html'" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-right:10px;">← Volver al Admin</button>
+    <button onclick="location.href='principal.html'" style="background:#667eea; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">Inicio</button>
+  </header>
+
+  <main class="content">
+    <div class="reporte-section">
+      <h3>Reporte General</h3>
+      <div class="filtros">
+        <select id="periodoGeneral">
+          <option value="semana">Semana</option>
+          <option value="mes" selected>Mes</option>
+          <option value="año">Año</option>
+        </select>
+        <button onclick="cargarReporteGeneral()">Generar Reporte</button>
+      </div>
+      <div id="resultadoGeneral" class="resultados"></div>
+    </div>
+
+    <div class="reporte-section">
+      <h3>Reporte de Usuarios</h3>
+      <div class="filtros">
+        <input type="date" id="fechaDesdeUsuarios">
+        <input type="date" id="fechaHastaUsuarios">
+        <button onclick="cargarReporteUsuarios()">Generar Reporte</button>
+      </div>
+      <div id="resultadoUsuarios" class="resultados"></div>
+    </div>
+
+    <div class="reporte-section">
+      <h3>Reporte de Elementos</h3>
+      <div class="filtros">
+        <select id="categoriaElementos">
+          <option value="">Todas las categorías</option>
+        </select>
+        <input type="date" id="fechaDesdeElementos">
+        <input type="date" id="fechaHastaElementos">
+        <button onclick="cargarReporteElementos()">Generar Reporte</button>
+      </div>
+      <div id="resultadoElementos" class="resultados"></div>
+    </div>
+
+    <div class="reporte-section">
+      <h3>Reporte de Préstamos</h3>
+      <div class="filtros">
+        <select id="estadoPrestamos">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="aprobado">Aprobado</option>
+          <option value="devuelto">Devuelto</option>
+          <option value="rechazado">Rechazado</option>
+        </select>
+        <input type="date" id="fechaDesdePrestamos">
+        <input type="date" id="fechaHastaPrestamos">
+        <button onclick="cargarReportePrestamos()">Generar Reporte</button>
+      </div>
+      <div id="resultadoPrestamos" class="resultados"></div>
+    </div>
+
+    <div class="reporte-section">
+      <h3>Reporte de Devoluciones</h3>
+      <div class="filtros">
+        <input type="date" id="fechaDesdeDevoluciones">
+        <input type="date" id="fechaHastaDevoluciones">
+        <button onclick="cargarReporteDevoluciones()">Generar Reporte</button>
+      </div>
+      <div id="resultadoDevoluciones" class="resultados"></div>
+    </div>
+
+    <div class="reporte-section">
+      <h3>Reporte de Sanciones</h3>
+      <div class="filtros">
+        <input type="text" id="idUsuarioSanciones" placeholder="ID Usuario (opcional)">
+        <input type="date" id="fechaDesdeSanciones">
+        <input type="date" id="fechaHastaSanciones">
+        <button onclick="cargarReporteSanciones()">Generar Reporte</button>
+      </div>
+      <div id="resultadoSanciones" class="resultados"></div>
+    </div>
+
+    <div class="reporte-section">
+      <h3>Reporte Mensual</h3>
+      <div class="filtros">
+        <input type="month" id="mesReporte" value="">
+        <button onclick="cargarReporteMensual()">Generar Reporte</button>
+      </div>
+      <div id="resultadoMensual" class="resultados"></div>
+    </div>
+
+    <div class="reporte-section">
+      <h3>Reporte Anual</h3>
+      <div class="filtros">
+        <input type="number" id="añoReporte" placeholder="Año" value="">
+        <button onclick="cargarReporteAnual()">Generar Reporte</button>
+      </div>
+      <div id="resultadoAnual" class="resultados"></div>
+    </div>
+  </main>
+
+  <script>
+    // Cargar categorías
+    async function cargarCategorias() {
+      try {
+        const res = await fetch('/api/maestros/categorias');
+        const cats = await res.json();
+        const select = document.getElementById('categoriaElementos');
+        cats.forEach(c => {
+          const option = document.createElement('option');
+          option.value = c.codigo;
+          option.textContent = c.descripcion;
+          select.appendChild(option);
+        });
+      } catch (e) {
+        console.error('Error cargando categorías', e);
+      }
+    }
+
+    async function cargarReporteGeneral() {
+      const periodo = document.getElementById('periodoGeneral').value;
+      const cont = document.getElementById('resultadoGeneral');
+      cont.innerHTML = 'Cargando...';
+      try {
+        const res = await fetch(`/api/reportes/general?periodo=${periodo}`);
+        const data = await res.json();
+        let html = `<h4>Reporte General - ${data.periodo}</h4>`;
+        html += `<p><strong>Préstamos:</strong> ${data.cantidad_prestamos}</p>`;
+        html += `<p><strong>Sanciones:</strong> ${data.cantidad_sanciones}</p>`;
+        html += `<p><strong>Advertencias:</strong> ${data.cantidad_advertencias}</p>`;
+        html += `<p><strong>Elementos dañados:</strong> ${data.cantidad_elementos_danados}</p>`;
+        html += `<h5>Top elementos prestados:</h5><ul>`;
+        data.elementos_prestados_frecuentes.forEach(e => {
+          html += `<li>${e.titulo} - ${e.veces_prestado} veces</li>`;
+        });
+        html += `</ul>`;
+        cont.innerHTML = html;
+      } catch (e) {
+        cont.innerHTML = 'Error cargando reporte';
+      }
+    }
+
+    async function cargarReporteUsuarios() {
+      const desde = document.getElementById('fechaDesdeUsuarios').value;
+      const hasta = document.getElementById('fechaHastaUsuarios').value;
+      const cont = document.getElementById('resultadoUsuarios');
+      cont.innerHTML = 'Cargando...';
+      try {
+        let url = '/api/reportes/usuarios?';
+        if (desde) url += `fecha_desde=${desde}&`;
+        if (hasta) url += `fecha_hasta=${hasta}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        mostrarTabla(cont, data, ['nombre', 'documento', 'tipo_usuario', 'correo', 'creado_en']);
+      } catch (e) {
+        cont.innerHTML = 'Error cargando reporte';
+      }
+    }
+
+    async function cargarReporteElementos() {
+      const cat = document.getElementById('categoriaElementos').value;
+      const desde = document.getElementById('fechaDesdeElementos').value;
+      const hasta = document.getElementById('fechaHastaElementos').value;
+      const cont = document.getElementById('resultadoElementos');
+      cont.innerHTML = 'Cargando...';
+      try {
+        let url = '/api/reportes/elementos?';
+        if (cat) url += `categoria=${cat}&`;
+        if (desde) url += `fecha_desde=${desde}&`;
+        if (hasta) url += `fecha_hasta=${hasta}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        mostrarTabla(cont, data, ['titulo', 'categoria', 'subcategoria', 'estado_disponibilidad', 'estado_elemento', 'stock']);
+      } catch (e) {
+        cont.innerHTML = 'Error cargando reporte';
+      }
+    }
+
+    async function cargarReportePrestamos() {
+      const estado = document.getElementById('estadoPrestamos').value;
+      const desde = document.getElementById('fechaDesdePrestamos').value;
+      const hasta = document.getElementById('fechaHastaPrestamos').value;
+      const cont = document.getElementById('resultadoPrestamos');
+      cont.innerHTML = 'Cargando...';
+      try {
+        let url = '/api/reportes/prestamos?';
+        if (estado) url += `estado=${estado}&`;
+        if (desde) url += `fecha_desde=${desde}&`;
+        if (hasta) url += `fecha_hasta=${hasta}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        mostrarTabla(cont, data, ['id', 'id_usuario', 'id_elemento', 'fecha_prestamo', 'estado']);
+      } catch (e) {
+        cont.innerHTML = 'Error cargando reporte';
+      }
+    }
+
+    async function cargarReporteDevoluciones() {
+      const desde = document.getElementById('fechaDesdeDevoluciones').value;
+      const hasta = document.getElementById('fechaHastaDevoluciones').value;
+      const cont = document.getElementById('resultadoDevoluciones');
+      cont.innerHTML = 'Cargando...';
+      try {
+        let url = '/api/reportes/devoluciones?';
+        if (desde) url += `fecha_desde=${desde}&`;
+        if (hasta) url += `fecha_hasta=${hasta}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        mostrarTabla(cont, data, ['id', 'id_usuario', 'id_elemento', 'fecha_prestamo', 'fecha_devolucion']);
+      } catch (e) {
+        cont.innerHTML = 'Error cargando reporte';
+      }
+    }
+
+    async function cargarReporteSanciones() {
+      const idUsuario = document.getElementById('idUsuarioSanciones').value;
+      const desde = document.getElementById('fechaDesdeSanciones').value;
+      const hasta = document.getElementById('fechaHastaSanciones').value;
+      const cont = document.getElementById('resultadoSanciones');
+      cont.innerHTML = 'Cargando...';
+      try {
+        let url = '/api/reportes/sanciones?';
+        if (idUsuario) url += `id_usuario=${idUsuario}&`;
+        if (desde) url += `fecha_desde=${desde}&`;
+        if (hasta) url += `fecha_hasta=${hasta}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        mostrarTabla(cont, data, ['consecutivo', 'id_usuario', 'fecha_registro', 'codigo_causa', 'codigo_tipo', 'estado']);
+      } catch (e) {
+        cont.innerHTML = 'Error cargando reporte';
+      }
+    }
+
+    async function cargarReporteMensual() {
+      const mes = document.getElementById('mesReporte').value;
+      const cont = document.getElementById('resultadoMensual');
+      cont.innerHTML = 'Cargando...';
+      try {
+        const res = await fetch(`/api/reportes/mensual?mes=${mes}`);
+        const data = await res.json();
+        let html = `<h4>Reporte Mensual - ${data.mes}</h4>`;
+        html += `<p><strong>Préstamos:</strong> ${data.prestamos}</p>`;
+        html += `<p><strong>Devoluciones:</strong> ${data.devoluciones}</p>`;
+        html += `<p><strong>Sanciones:</strong> ${data.sanciones}</p>`;
+        cont.innerHTML = html;
+      } catch (e) {
+        cont.innerHTML = 'Error cargando reporte';
+      }
+    }
+
+    async function cargarReporteAnual() {
+      const año = document.getElementById('añoReporte').value;
+      const cont = document.getElementById('resultadoAnual');
+      cont.innerHTML = 'Cargando...';
+      try {
+        const res = await fetch(`/api/reportes/anual?año=${año}`);
+        const data = await res.json();
+        let html = `<h4>Reporte Anual - ${data.año}</h4>`;
+        html += `<p><strong>Total Préstamos:</strong> ${data.total_prestamos}</p>`;
+        html += `<p><strong>Total Sanciones:</strong> ${data.total_sanciones}</p>`;
+        html += `<p><strong>Total Devoluciones:</strong> ${data.total_devoluciones}</p>`;
+        cont.innerHTML = html;
+      } catch (e) {
+        cont.innerHTML = 'Error cargando reporte';
+      }
+    }
+
+    function mostrarTabla(container, data, campos) {
+      if (!data || data.length === 0) {
+        container.innerHTML = 'No hay datos para mostrar';
+        return;
+      }
+      let html = '<table><thead><tr>';
+      campos.forEach(c => {
+        html += `<th>${c}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      data.forEach(item => {
+        html += '<tr>';
+        campos.forEach(c => {
+          html += `<td>${item[c] || ''}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // Establecer valores por defecto
+    document.getElementById('mesReporte').value = new Date().toISOString().slice(0, 7);
+    document.getElementById('añoReporte').value = new Date().getFullYear();
+
+    cargarCategorias();
+  </script>
+</body>
+</html>
+

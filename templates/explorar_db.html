@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Explorar Base de Datos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #333;
+      margin-bottom: 15px;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+    }
+    tr:hover {
+      background: #f5f5f5;
+    }
+    .tabla-container {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #2196f3;
+    }
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      color: #1976d2;
+      font-size: 14px;
+    }
+    .stat-card .number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #0d47a1;
+    }
+    .consulta-box {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🗄️ Explorador de Base de Datos</h2>
+    <button onclick="cargarEstadisticas()">📊 Ver Estadísticas</button>
+    <button onclick="mostrarTablas()">📋 Listar Tablas</button>
+    <button onclick="limpiarResultado()">🗑️ Limpiar</button>
+    
+    <div id="estadisticas" class="stats" style="display:none;"></div>
+    <div id="resultado"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔍 Consulta SQL Personalizada</h2>
+    <p><strong>⚠️ ADVERTENCIA:</strong> Solo consultas SELECT. No uses DELETE, UPDATE o DROP.</p>
+    <div class="consulta-box">
+      <textarea id="sqlQuery" placeholder="Ejemplo: SELECT * FROM libros LIMIT 10;"></textarea>
+      <button onclick="ejecutarConsulta()">Ejecutar Consulta</button>
+      <button onclick="ejecutarConsultaEjemplo('libros')">Ver Libros</button>
+      <button onclick="ejecutarConsultaEjemplo('usuarios')">Ver Usuarios</button>
+      <button onclick="ejecutarConsultaEjemplo('prestamos')">Ver Préstamos</button>
+      <button onclick="ejecutarConsultaEjemplo('sanciones')">Ver Sanciones</button>
+    </div>
+    <div id="resultadoConsulta"></div>
+  </div>
+
+  <script>
+    function limpiarResultado() {
+      document.getElementById('resultado').innerHTML = '';
+      document.getElementById('resultadoConsulta').innerHTML = '';
+      document.getElementById('estadisticas').style.display = 'none';
+    }
+
+    async function cargarEstadisticas() {
+      const statsDiv = document.getElementById('estadisticas');
+      statsDiv.style.display = 'grid';
+      statsDiv.innerHTML = 'Cargando estadísticas...';
+
+      const tablas = ['libros', 'usuarios', 'prestamos', 'sanciones', 'waitlist', 'notificaciones_sancion'];
+      
+      try {
+        let html = '';
+        for (const tabla of tablas) {
+          try {
+            const res = await fetch(`/api/db/stats/${tabla}`);
+            if (res.ok) {
+              const data = await res.json();
+              html += `<div class="stat-card">
+                <h3>${tabla.toUpperCase()}</h3>
+                <div class="number">${data.count || 0}</div>
+              </div>`;
+            }
+          } catch (e) {
+            // Si la tabla no existe o hay error, mostrar 0
+            html += `<div class="stat-card">
+              <h3>${tabla.toUpperCase()}</h3>
+              <div class="number">0</div>
+            </div>`;
+          }
+        }
+        statsDiv.innerHTML = html;
+      } catch (e) {
+        statsDiv.innerHTML = '<div class="stat-card"><h3>Error</h3><div>No se pudieron cargar las estadísticas</div></div>';
+      }
+    }
+
+    async function mostrarTablas() {
+      const resultado = document.getElementById('resultado');
+      resultado.innerHTML = 'Cargando tablas...';
+      
+      try {
+        const res = await fetch('/api/db/tablas');
+        const data = await res.json();
+        
+        if (data.tablas && data.tablas.length > 0) {
+          let html = '<h3>📚 Tablas en la Base de Datos:</h3><ul>';
+          data.tablas.forEach(tabla => {
+            html += `<li><strong>${tabla}</strong> <button onclick="verTabla('${tabla}')">Ver contenido</button></li>`;
+          });
+          html += '</ul>';
+          resultado.innerHTML = html;
+        } else {
+          resultado.innerHTML = '<p>No se encontraron tablas</p>';
+        }
+      } catch (e) {
+        resultado.innerHTML = '<p>Error al cargar tablas. Usa las consultas SQL de abajo.</p>';
+      }
+    }
+
+    async function verTabla(nombreTabla) {
+      ejecutarConsultaEjemplo(nombreTabla);
+    }
+
+    async function ejecutarConsultaEjemplo(tabla) {
+      document.getElementById('sqlQuery').value = `SELECT * FROM ${tabla} LIMIT 20;`;
+      ejecutarConsulta();
+    }
+
+    async function ejecutarConsulta() {
+      const query = document.getElementById('sqlQuery').value.trim();
+      const resultado = document.getElementById('resultadoConsulta');
+      
+      if (!query) {
+        resultado.innerHTML = '<p style="color: red;">Por favor, escribe una consulta SQL</p>';
+        return;
+      }
+
+      // Seguridad: solo permitir SELECT
+      if (!query.toUpperCase().startsWith('SELECT')) {
+        resultado.innerHTML = '<p style="color: red;">⚠️ Solo se permiten consultas SELECT por seguridad</p>';
+        return;
+      }
+
+      resultado.innerHTML = 'Ejecutando consulta...';
+
+      try {
+        const res = await fetch('/api/db/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.resultados) {
+          const resultados = data.resultados;
+          
+          if (resultados.length === 0) {
+            resultado.innerHTML = '<p>✓ Consulta ejecutada. No hay resultados.</p>';
+            return;
+          }
+
+          // Obtener nombres de columnas
+          const columnas = Object.keys(resultados[0]);
+          
+          let html = `<h3>📋 Resultados (${resultados.length} registros):</h3>`;
+          html += '<div class="tabla-container"><table><thead><tr>';
+          
+          columnas.forEach(col => {
+            html += `<th>${col}</th>`;
+          });
+          html += '</tr></thead><tbody>';
+
+          resultados.forEach(fila => {
+            html += '<tr>';
+            columnas.forEach(col => {
+              const valor = fila[col];
+              const displayVal = valor !== null && valor !== undefined ? String(valor).substring(0, 50) : '';
+              html += `<td title="${valor}">${displayVal}</td>`;
+            });
+            html += '</tr>';
+          });
+
+          html += '</tbody></table></div>';
+          resultado.innerHTML = html;
+        } else {
+          resultado.innerHTML = `<p style="color: red;">Error: ${data.error || 'Error al ejecutar la consulta'}</p>`;
+        }
+      } catch (e) {
+        resultado.innerHTML = '<p style="color: red;">Error de conexión. Usa el método alternativo con Python.</p>';
+      }
+    }
+  </script>
+</body>
+</html>
+
+
+

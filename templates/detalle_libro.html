@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalles del Libro - Biblioteca SENA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/detalle_libro.css') }}">
+
+<style>
+/* Toasts - bottom-right */
+#toast-container {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+  pointer-events: none; /* allow clicks through when no toasts */
+}
+.toast {
+  min-width: 260px;
+  max-width: 360px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  transform: translateY(16px);
+  opacity: 0;
+  transition: transform 260ms ease, opacity 260ms ease;
+  pointer-events: auto;
+}
+.toast-show {
+  transform: translateY(0);
+  opacity: 1;
+}
+.toast-success { background: linear-gradient(90deg,#2ecc71,#27ae60); }
+.toast-error   { background: linear-gradient(90deg,#e74c3c,#c0392b); }
+.toast-info    { background: linear-gradient(90deg,#3498db,#2c82d6); }
+.toast .toast-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.toast .toast-body {
+  opacity: 0.95;
+  line-height: 1.2;
+}
+.toast-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.9);
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>
+
+</head>
+<body>
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <div class="buscador">
+      <input type="text" placeholder="Buscar">
+      <button><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/></svg></button>
+    </div>
+    <div class="usuario" id="usuarioContainer" style="position: relative; cursor: pointer;">
+      <span id="nombreUsuario">Usuario</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
+      <div class="usuario-menu" id="usuarioMenu" style="display: none; position: fixed; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 180px; z-index: 999999; overflow: hidden;">
+        <a href="#" id="linkFavoritos" style="display: block; padding: 12px 20px; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #eee; transition: background 0.2s;">
+          ❤️ Mis Favoritos
+        </a>
+        <a href="#" id="linkPerfil" style="display: block; padding: 12px 20px; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #eee; transition: background 0.2s;">
+          👤 Ver Perfil
+        </a>
+        <a href="#" id="linkCerrarSesion" style="display: block; padding: 12px 20px; color: #e74c3c; text-decoration: none; transition: background 0.2s;">
+          🚪 Cerrar Sesión
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <nav class="breadcrumb">
+    <a href="principal.html">Inicio</a> > <span>Detalles del Libro</span>
+  </nav>
+
+  <main class="detalle-container">
+    <div class="libro-detalle">
+      <div class="libro-imagen">
+        <img id="libro-portada" src="/static/uploads/libro1.jpg" alt="Portada del libro">
+      </div>
+      
+      <div class="libro-info">
+        <h1 id="libro-titulo">LA ERA DE LOS PIONEROS</h1>
+        <p class="autor libro-field">Por <strong id="libro-autor">TRIGUERO MORENO, GUILLERMO</strong></p>
+        <p class="equipo-field" style="display:none;"><strong id="equipo-marca-modelo">-</strong></p>
+        
+        <div class="disponibilidad">
+          <span class="estado" id="estado-disponibilidad">✓ Disponible</span>
+          <span class="copias" id="copias-disponibles">- ejemplares disponibles</span>
+        </div>
+
+        <div class="acciones">
+          <button class="btn-prestamo" id="btnSolicitar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Solicitar Préstamo
+          </button>
+          <button class="btn-favorito" id="btnFavorito" title="Agregar a favoritos">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </button>
+        </div>
+
+        <div class="detalles-tecnicos">
+          <h3 id="titulo-detalles">Información del Libro</h3>
+          <div class="info-grid" id="info-grid">
+            <!-- Campos para libros -->
+            <div class="info-item libro-field">
+              <span class="label">Editorial:</span>
+              <span id="libro-editorial">UNIVERSITAT OBERTA D CATALUNYA</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Categoría:</span>
+              <span id="libro-categoria">CINE</span>
+            </div>
+            <div class="info-item libro-field">
+              <span class="label">ISBN:</span>
+              <span id="libro-isbn">978-84-9788-XXX-X</span>
+            </div>
+            <div class="info-item libro-field">
+              <span class="label">Año:</span>
+              <span id="libro-año">2023</span>
+            </div>
+            <div class="info-item libro-field">
+              <span class="label">Páginas:</span>
+              <span id="libro-paginas">245</span>
+            </div>
+            <!-- Campos para equipos/PCs -->
+            <div class="info-item equipo-field" style="display:none;">
+              <span class="label">Código de Inventario:</span>
+              <span id="equipo-codigo">-</span>
+            </div>
+            <div class="info-item equipo-field" style="display:none;">
+              <span class="label">Subcategoría:</span>
+              <span id="equipo-subcategoria">-</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Estado:</span>
+              <span class="estado-libro" id="libro-estado">Buen estado</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="descripcion">
+          <h3>Descripción</h3>
+          <p id="libro-descripcion">
+            Una fascinante exploración de los primeros días del cine, desde sus humildes comienzos hasta convertirse en el medio de entretenimiento más influyente del mundo. Este libro examina las innovaciones técnicas, los pioneros visionarios y las obras maestras que definieron los fundamentos del séptimo arte.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="libros-relacionados">
+      <h3>Libros Relacionados</h3>
+      <div class="relacionados-grid">
+        <div class="libro-mini">
+          <img src="/static/uploads/libro2.jpg" alt="Libro relacionado">
+          <p>Con Tantito Epazote</p>
+        </div>
+        <div class="libro-mini">
+          <img src="/static/uploads/libro3.jpg" alt="Libro relacionado">
+          <p>Una Diseñadora en NY</p>
+        </div>
+        <div class="libro-mini">
+          <img src="/static/uploads/libro4.jpg" alt="Libro relacionado">
+          <p>RSEI</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="pie">
+    <a href="#">Listado de editoriales</a>
+    <a href="#">Contacto</a>
+    <a href="#">Ayuda</a>
+  </footer>
+
+  <script src="/static/js/app_helpers.js" defer></script>
+  <script>
+    // Obtener parámetros de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const libroId = urlParams.get('id');
+    
+    // Datos de ejemplo (en una app real vendrían de la base de datos)
+    const libros = {
+      '1': {
+        titulo: 'LA ERA DE LOS PIONEROS',
+        autor: 'TRIGUERO MORENO, GUILLERMO',
+        editorial: 'UNIVERSITAT OBERTA D CATALUNYA',
+        categoria: 'CINE',
+        imagen: '/static/uploads/libro1.jpg',
+        isbn: '978-84-9788-001-1',
+        año: '2023',
+        descripcion: 'Una fascinante exploración de los primeros días del cine, desde sus humildes comienzos hasta convertirse en el medio de entretenimiento más influyente del mundo.'
+      },
+      '2': {
+        titulo: 'CON TANTITO EPAZOTE SE COMPONE',
+        autor: 'BOSCH, PEDRO',
+        editorial: 'FONDO DE CULTURA ECONOMICA',
+        categoria: 'NARRATIVA LATINOAMERICANA',
+        imagen: '/static/uploads/libro2.jpg',
+        isbn: '978-84-9788-002-2',
+        año: '2022',
+        descripcion: 'Una colección de relatos que exploran la cultura mexicana a través de historias llenas de sabor y tradición.'
+      },
+      '3': {
+        titulo: 'UNA DISEÑADORA EN NUEVA YORK',
+        autor: 'TRIGUERO MORENO, GUILLERMO',
+        editorial: 'EDITORIAL CLUB UNIVERSITARIO (ECU)',
+        categoria: 'DISEÑO',
+        imagen: '/static/uploads/libro3.jpg',
+        isbn: '978-84-9788-003-3',
+        año: '2023',
+        descripcion: 'La historia de una joven diseñadora que busca hacer realidad sus sueños en la gran manzana.'
+      },
+      '4': {
+        titulo: 'RSEI',
+        autor: 'RSEI',
+        editorial: 'EDICIONES UNIVERSIDAD SALAMANCA',
+        categoria: 'LENGUA Y LINGÜÍSTICA',
+        imagen: '/static/uploads/libro4.jpg',
+        isbn: '978-84-9788-004-4',
+        año: '2023',
+        descripcion: 'Revista de estudios sobre lengua y lingüística con los últimos avances en investigación.'
+      },
+      '5': {
+        titulo: 'TECNOLOGÍA MODERNA',
+        autor: 'GARCÍA LÓPEZ, MARÍA',
+        editorial: 'EDITORIAL TECNOLÓGICA',
+        categoria: 'TECNOLOGÍA',
+        imagen: '/static/uploads/libro5.jpg',
+        isbn: '978-84-9788-005-5',
+        año: '2023',
+        descripcion: 'Un análisis completo de las tecnologías emergentes y su impacto en la sociedad actual.'
+      },
+      '6': {
+        titulo: 'HISTORIA DEL ARTE',
+        autor: 'MARTÍNEZ RUIZ, CARLOS',
+        editorial: 'EDITORIAL ARTE Y CULTURA',
+        categoria: 'ARTE',
+        imagen: '/static/uploads/libro6.jpg',
+        isbn: '978-84-9788-006-6',
+        año: '2022',
+        descripcion: 'Un recorrido por las principales corrientes artísticas desde el Renacimiento hasta la actualidad.'
+      },
+      '7': {
+        titulo: 'CIENCIAS NATURALES',
+        autor: 'RODRÍGUEZ PÉREZ, ANA',
+        editorial: 'EDITORIAL CIENTÍFICA',
+        categoria: 'CIENCIA',
+        imagen: '/static/uploads/libro7.jpg',
+        isbn: '978-84-9788-007-7',
+        año: '2023',
+        descripcion: 'Introducción a las ciencias naturales con ejemplos prácticos y experimentos.'
+      },
+      '8': {
+        titulo: 'LITERATURA CLÁSICA',
+        autor: 'FERNÁNDEZ SILVA, LUIS',
+        editorial: 'EDITORIAL CLÁSICOS',
+        categoria: 'LITERATURA',
+        imagen: '/static/uploads/libro8.jpg',
+        isbn: '978-84-9788-008-8',
+        año: '2022',
+        descripcion: 'Una selección de las obras más importantes de la literatura universal.'
+      },
+      '9': {
+        titulo: 'MATEMÁTICAS APLICADAS',
+        autor: 'GONZÁLEZ TORRES, PEDRO',
+        editorial: 'EDITORIAL MATEMÁTICA',
+        categoria: 'MATEMÁTICAS',
+        imagen: '/static/uploads/libro9.jpg',
+        isbn: '978-84-9788-009-9',
+        año: '2023',
+        descripcion: 'Conceptos matemáticos aplicados a problemas reales del mundo moderno.'
+      },
+      '10': {
+        titulo: 'FILOSOFÍA CONTEMPORÁNEA',
+        autor: 'LÓPEZ MORALES, ELENA',
+        editorial: 'EDITORIAL FILOSOFÍA',
+        categoria: 'FILOSOFÍA',
+        imagen: '/static/uploads/libro10.jpg',
+        isbn: '978-84-9788-010-0',
+        año: '2023',
+        descripcion: 'Análisis de las corrientes filosóficas del siglo XXI y su relevancia actual.'
+      }
+    };
+
+    // Función auxiliar para actualizar la UI con los datos del elemento
+    function actualizarUI(elemento) {
+      if (!elemento) return;
+      
+      // Detectar si es un equipo/PC o un libro
+      const categoria = (elemento.categoria || '').toLowerCase();
+      const esEquipo = categoria.includes('equipo') || 
+                      categoria.includes('informático') || 
+                      categoria.includes('pc') ||
+                      categoria === 'tablets' || 
+                      categoria === 'proyectores';
+      
+      // Actualizar título
+      document.getElementById('libro-titulo').textContent = elemento.titulo || '';
+      
+      // Mostrar/ocultar campos según tipo
+      if (esEquipo) {
+        // Es un equipo/PC
+        document.querySelector('.autor.libro-field').style.display = 'none';
+        const equipoMarca = document.querySelector('.equipo-field');
+        if (equipoMarca) equipoMarca.style.display = 'block';
+        document.getElementById('equipo-marca-modelo').textContent = elemento.titulo || '';
+        
+        // Ocultar campos de libro
+        document.querySelectorAll('.libro-field').forEach(el => el.style.display = 'none');
+        // Mostrar campos de equipo
+        document.querySelectorAll('.equipo-field').forEach(el => el.style.display = 'block');
+        
+        // Actualizar título de sección
+        document.getElementById('titulo-detalles').textContent = 'Información del Equipo';
+        
+        // Llenar campos de equipo
+        document.getElementById('equipo-codigo').textContent = elemento.codigo_inventario || '-';
+        document.getElementById('equipo-subcategoria').textContent = elemento.subcategoria || '-';
+      } else {
+        // Es un libro
+        document.querySelector('.autor.libro-field').style.display = 'block';
+        document.querySelector('.equipo-field')?.style.setProperty('display', 'none');
+        
+        // Mostrar campos de libro
+        document.querySelectorAll('.libro-field').forEach(el => el.style.display = 'block');
+        // Ocultar campos de equipo
+        document.querySelectorAll('.equipo-field').forEach(el => el.style.display = 'none');
+        
+        // Actualizar título de sección
+        document.getElementById('titulo-detalles').textContent = 'Información del Libro';
+        
+        // Llenar campos de libro
+        document.getElementById('libro-autor').textContent = elemento.autor || 'Sin autor';
+        document.getElementById('libro-editorial').textContent = elemento.editorial || '-';
+        document.getElementById('libro-isbn').textContent = elemento.isbn || '-';
+        document.getElementById('libro-año').textContent = elemento.anio_publicacion || '-';
+      }
+      
+      // Campos comunes
+      document.getElementById('libro-categoria').textContent = elemento.categoria || '';
+      document.getElementById('libro-estado').textContent = elemento.estado_elemento || 'Buen estado';
+      const portada = elemento.imagen ? (elemento.imagen.startsWith('uploads/') ? `/${elemento.imagen}` : elemento.imagen) : '/static/uploads/libro1.jpg';
+      document.getElementById('libro-portada').src = portada;
+      document.getElementById('libro-descripcion').textContent = elemento.descripcion || '';
+      
+      // ACTUALIZAR DISPONIBILIDAD Y CANTIDAD REALES
+      const cantidadDisp = elemento.cantidad_disponible || 0;
+      const estadoDisp = elemento.estado_disponibilidad || '';
+      const estaDisponible = cantidadDisp > 0 && (estadoDisp.toLowerCase() !== 'prestado' || cantidadDisp > 0);
+      
+      const textoUnidad = esEquipo ? 'unidades' : 'ejemplares';
+      const textoUnidadSingular = esEquipo ? 'unidad' : 'ejemplar';
+      
+      const estadoEl = document.getElementById('estado-disponibilidad');
+      const copiasEl = document.getElementById('copias-disponibles');
+      
+      if (estaDisponible && cantidadDisp > 0) {
+        estadoEl.textContent = '✓ Disponible';
+        estadoEl.className = 'estado disponible';
+        const texto = cantidadDisp === 1 ? `1 ${textoUnidadSingular} disponible` : `${cantidadDisp} ${textoUnidad} disponibles`;
+        copiasEl.textContent = texto;
+      } else {
+        estadoEl.textContent = '✗ No Disponible';
+        estadoEl.className = 'estado no-disponible';
+        copiasEl.textContent = `0 ${textoUnidad} disponibles`;
+      }
+      
+      // Actualizar botones con el ID correcto del elemento
+      if (elemento.id) {
+        // Actualizar función onclick del botón de préstamo con el ID correcto
+        const btn = document.getElementById('btnSolicitar');
+        if (btn) {
+          console.log('Asignando handler btnSolicitar para elemento.id:', elemento && elemento.id);
+          // Guardar el ID del elemento en una variable para el closure
+          const elementoId = elemento.id;
+          // Remover cualquier evento anterior
+          const btnClone = btn.cloneNode(true);
+          btn.parentNode.replaceChild(btnClone, btn);
+          // Asignar nuevo evento al botón clonado
+          btnClone.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('btnSolicitar clic -> solicitarPrestamo(', elementoId, ')');
+            if (!elementoId) {
+              console.error('ID del elemento no disponible');
+              alert('Error: No se puede identificar el elemento');
+              return;
+            }
+            // Deshabilitar botón mientras se procesa
+            btnClone.disabled = true;
+            btnClone.style.opacity = '0.6';
+            try {
+              await solicitarPrestamo(elementoId);
+            } catch(err) {
+              console.error('Error al invocar solicitarPrestamo:', err);
+              if (typeof mostrarToast === 'function') {
+                mostrarToast('Ocurrió un error al solicitar el préstamo.', 'error');
+              } else {
+                alert('Error: ' + (err.message || 'Ocurrió un error al solicitar el préstamo'));
+              }
+            } finally {
+              // Rehabilitar botón después de un delay
+              setTimeout(() => {
+                btnClone.disabled = false;
+                btnClone.style.opacity = '1';
+              }, 2000);
+            }
+          };
+        } else {
+          console.error('Botón btnSolicitar no encontrado en el DOM');
+        }
+        
+        // Actualizar función onclick del botón de favoritos con el ID correcto
+        const btnFav = document.getElementById('btnFavorito');
+        if (btnFav) {
+          console.log('Asignando handler btnFavorito para elemento.id:', elemento && elemento.id);
+          const elementoIdFav = elemento.id;
+          const btnFavClone = btnFav.cloneNode(true);
+          btnFav.parentNode.replaceChild(btnFavClone, btnFav);
+          btnFavClone.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              const token = localStorage.getItem('token');
+              if (token && token.startsWith('user-')) {
+                // Usuario logueado: usar API
+                const agregado = await toggleFavorito(elementoIdFav);
+                mostrarToast(agregado ? '✅ Agregado a favoritos' : '❌ Removido de favoritos', agregado ? 'success' : 'info');
+              } else {
+                // Usuario no logueado: usar localStorage
+                const agregadoLocal = toggleFavorito(elementoIdFav);
+                mostrarToast(agregadoLocal ? '✅ Agregado a favoritos' : '❌ Removido de favoritos', agregadoLocal ? 'success' : 'info');
+              }
+              actualizarBotonFavorito(elementoIdFav);
+            } catch(err) {
+              console.error('Error toggleFavorito:', err);
+              mostrarToast('Ocurrió un error actualizando favoritos.', 'error');
+            }
+          };
+          // Actualizar estado visual
+          if (typeof actualizarBotonFavorito === 'function') {
+            actualizarBotonFavorito(elementoIdFav);
+          }
+        }
+      }
+      
+      return true;
+    }
+
+    // Intentar cargar datos desde la API y hacer fallback a datos estáticos
+    async function cargarDesdeAPI(id) {
+      try {
+        const res = await fetch(`/api/libros/${id}`);
+        if (!res.ok) return false;
+        const elemento = await res.json();
+        
+        // Usar función auxiliar para actualizar UI
+        return actualizarUI(elemento);
+      } catch (e) {
+        console.error('Error cargando datos:', e);
+        return false;
+      }
+    }
+
+    async function solicitarPrestamo(idElemento) {
+      console.log('Iniciando solicitud de préstamo para', idElemento);
+      
+      if (!idElemento) {
+        console.error('ID de elemento no válido');
+        alert('Error: ID de elemento no válido');
+        return;
+      }
+
+      // Primero obtener información del elemento para saber si es libro o equipo
+      let esEquipo = false;
+      try {
+        let resElemento;
+        try {
+          resElemento = await fetch(`/api/libros/${idElemento}`);
+          console.log('/api/libros response', resElemento.status);
+          if (!resElemento.ok) {
+            throw new Error(`Error ${resElemento.status}: ${resElemento.statusText}`);
+          }
+        } catch(e) {
+          console.error('Fetch /api/libros error', e);
+          const errorMsg = 'No se pudo conectar al servidor para obtener el elemento.';
+          if (typeof mostrarToast === 'function') {
+            mostrarToast(errorMsg, 'error');
+          } else {
+            alert('❌ ' + errorMsg);
+          }
+          return;
+        }
+        if (resElemento.ok) {
+          const elemento = await resElemento.json();
+          const categoria = (elemento.categoria || '').toLowerCase();
+          esEquipo = categoria.includes('equipo') || 
+                     categoria.includes('informático') || 
+                     categoria.includes('pc') ||
+                     categoria === 'tablets' || 
+                     categoria === 'proyectores';
+        }
+      } catch(e) {
+        console.error('Error obteniendo elemento:', e);
+      }
+      
+      // Obtener información del usuario actual
+      const token = localStorage.getItem('token');
+      let idUsuario = null;
+      let nombreUsuario = '';
+      let documentoUsuario = '';
+      
+      if (token && token.startsWith('user-')) {
+        idUsuario = token.replace('user-', '');
+        // Intentar obtener datos del usuario
+        try {
+          const resUser = await fetch(`/api/usuarios/${idUsuario}`);
+          if (resUser.ok) {
+            const userData = await resUser.json();
+            nombreUsuario = userData.nombre || '';
+            documentoUsuario = userData.documento || '';
+          }
+        } catch(e) {}
+      }
+      
+      // Si es equipo, requerir usuario logueado
+      if (esEquipo && !idUsuario) {
+        alert('⚠️ Para solicitar equipos necesitas iniciar sesión.\n\nPor favor, inicia sesión e intenta nuevamente.');
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      try {
+        // Para libros, id_usuario es opcional. Para equipos, es requerido.
+        let payload = { 
+          id_elemento: idElemento
+        };
+        
+        // Solo incluir id_usuario si está disponible (para equipos es requerido, para libros es opcional)
+        if (idUsuario) {
+          payload.id_usuario = idUsuario;
+        }
+        
+        payload.fecha_prestamo = new Date().toISOString();
+        
+        console.log('Enviando solicitud de préstamo:', payload);
+        
+        let res = await fetch('/prestamos', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(payload) 
+        });
+        
+        console.log('Respuesta del servidor:', res.status, res.statusText);
+        
+        let data;
+        try {
+          data = await res.json();
+        } catch(parseError) {
+          console.error('Error parseando respuesta JSON:', parseError);
+          const text = await res.text().catch(() => '');
+          console.error('Respuesta del servidor (texto):', text);
+          throw new Error('Error al procesar la respuesta del servidor');
+        }
+        
+        if (res.ok && data.ok) {
+          const mensajeUsuario = idUsuario 
+            ? `\n👤 Usuario: ${nombreUsuario || 'N/A'}\n🆔 Cédula: ${documentoUsuario || idUsuario}`
+            : '';
+          alert(`✅ Solicitud enviada correctamente.${mensajeUsuario}\n\nQueda pendiente de aprobación por el administrador.`);
+          return;
+        }
+        
+        // Manejar respuesta de lista de espera
+        if (res.status === 202) {
+          alert(`⚠️ ${data.error || 'Elemento no disponible'}. Has sido agregado a la lista de espera.`);
+          return;
+        }
+        
+        const errorMsg = data.error || `No se pudo registrar el préstamo (Error ${res.status})`;
+        console.error('Error en respuesta:', errorMsg);
+        alert('❌ ' + errorMsg);
+      } catch (e) {
+        const errorMsg = 'Error de red al solicitar el préstamo: ' + (e.message || String(e));
+        console.error('Error en solicitarPrestamo:', e);
+        alert('❌ ' + errorMsg);
+        throw e; // Re-lanzar para que el handler del botón lo capture
+      }
+    }
+
+    // Cargar nombre de usuario y configurar menú
+    async function cargarNombreUsuario() {
+      const token = localStorage.getItem('token');
+      const nombreEl = document.getElementById('nombreUsuario');
+      if (!nombreEl) return;
+      
+      // Intentar desde localStorage
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.name || user.nombre) {
+            nombreEl.textContent = user.name || user.nombre;
+            return;
+          }
+        } catch (e) {}
+      }
+      
+      // Si hay token, intentar obtener desde API
+      if (token && token.startsWith('user-')) {
+        const userId = token.replace('user-', '');
+        try {
+          const res = await fetch(`/api/usuarios/${userId}`);
+          if (res.ok) {
+            const user = await res.json();
+            if (user.nombre) {
+              nombreEl.textContent = user.nombre;
+              // Guardar en localStorage
+              localStorage.setItem('userData', JSON.stringify({ name: user.nombre, id: user.id }));
+            }
+          }
+        } catch (e) {
+          console.error('Error cargando usuario:', e);
+        }
+      } else if (token === 'admin-token') {
+        nombreEl.textContent = 'Administrador';
+      }
+    }
+    
+    // Configurar menú de usuario
+    
+function configurarMenuUsuario() {
+  const container = document.getElementById('usuarioContainer');
+  const menu = document.getElementById('usuarioMenu');
+  const linkPerfil = document.getElementById('linkPerfil');
+  const linkCerrar = document.getElementById('linkCerrarSesion');
+
+  if (!container || !menu) return;
+
+  // helper to position menu using fixed coords relative to viewport
+  const posicionar = () => {
+    const rect = container.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    // place menu below the container with small gap
+    menu.style.top = (rect.bottom + 8) + 'px';
+    // align right edge of menu with right edge of container (use right for responsiveness)
+    menu.style.right = (window.innerWidth - rect.right) + 'px';
+    menu.style.zIndex = '2147483646';
+  };
+
+  // Toggle menú al hacer clic
+  container.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = menu.style.display === 'block';
+    if (isOpen) {
+      menu.style.display = 'none';
+    } else {
+      posicionar();
+      menu.style.display = 'block';
+    }
+  });
+
+  // Cerrar menú al hacer clic fuera
+  document.addEventListener('click', (e) => {
+    if (!container.contains(e.target) && !menu.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
+
+  // Reposicionar u ocultar en scroll/resize para evitar que se "descontrole"
+  let rafId = null;
+  const handleScrollResize = () => {
+    if (menu.style.display === 'block') {
+      // use rAF to avoid layout thrash
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        posicionar();
+      });
+    }
+  };
+  window.addEventListener('scroll', handleScrollResize, {passive:true});
+  window.addEventListener('resize', () => {
+    // ocultar y forzar reposicion
+    menu.style.display = 'none';
+    handleScrollResize();
+  });
+  
+  // Configurar enlaces del menú
+  // Acción cerrar sesión
+  if (linkCerrar) {
+    linkCerrar.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+        window.location.href = 'login.html';
+      }
+    });
+  }
+  
+  // Acción perfil
+  if (linkPerfil) {
+    linkPerfil.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = 'perfil.html';
+    });
+  }
+  
+  // Acción favoritos
+  const linkFavoritos = document.getElementById('linkFavoritos');
+  if (linkFavoritos) {
+    linkFavoritos.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = 'favoritos.html';
+    });
+  }
+}
+
+// Inicialización cuando el DOM está listo
+(function() {
+  // Cargar datos del libro si hay ID en la URL
+  if (libroId) {
+    cargarDesdeAPI(libroId).catch(err => {
+      console.error('Error cargando desde API:', err);
+      // Intentar con datos estáticos
+      if (libros[libroId]) {
+        const libro = libros[libroId];
+        const elemento = {
+          id: libroId,
+          titulo: libro.titulo,
+          autor: libro.autor,
+          editorial: libro.editorial,
+          categoria: libro.categoria,
+          isbn: libro.isbn,
+          anio_publicacion: libro.año,
+          descripcion: libro.descripcion,
+          imagen: libro.imagen,
+          cantidad_disponible: 5,
+          estado_disponibilidad: 'Disponible',
+          estado_elemento: 'Buen estado'
+        };
+        // Actualizar UI con datos estáticos
+        actualizarUI(elemento);
+      }
+    });
+  }
+  
+  // Cargar nombre de usuario y configurar menú
+  cargarNombreUsuario();
+  configurarMenuUsuario();
+})();
+
+
+</script>
+
+</body>
+</html>

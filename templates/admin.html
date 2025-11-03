@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administración</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+  <style>
+    .admin-header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    }
+    .admin-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .admin-tab {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .admin-tab.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-color: transparent;
+    }
+    .admin-tab:hover:not(.active) {
+      background: #f0f0f0;
+    }
+    .admin-tab .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #f44336;
+      color: white;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .section-content {
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+    .section-content.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .usuario-info {
+      background: #e3f2fd;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      border-left: 4px solid #2196f3;
+    }
+    .mensajes-panel {
+      background: white;
+      border: 2px solid #667eea;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .mensaje-item {
+      padding: 12px;
+      border-bottom: 1px solid #e0e0e0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .mensaje-item:hover {
+      background: #f5f5f5;
+    }
+    .mensaje-item.no-leido {
+      background: #fff3cd;
+      font-weight: 600;
+    }
+    .btn-conectar {
+      background: #9c27b0;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 12px;
+    }
+    .eliminar-todo-box {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+    .bot-busqueda {
+      background: #e8f5e9;
+      border: 2px solid #4caf50;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <h2 style="margin-left:16px; flex:1;">⚙️ Panel de Administración</h2>
+    <a href="principal.html" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; text-decoration:none; margin-right:8px;">← Inicio</a>
+    <a href="admin_mensajes.html" style="background:#667eea; color:white; padding:8px 16px; border:none; border-radius:6px; text-decoration:none; position:relative;">
+      💬 Mensajes
+      <span id="badgeMensajesAdmin" style="display:none; position:absolute; top:-8px; right:-8px; background:#f44336; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; font-weight:bold;">0</span>
+    </a>
+  </header>
+
+  <main class="content">
+    <div class="admin-header">
+      <h2 style="margin:0 0 16px 0; color:white;">📊 Panel de Administración</h2>
+      <div class="admin-tabs">
+        <div class="admin-tab active" data-section="pendientes">
+          ⏳ Solicitudes Pendientes
+          <span class="badge" id="badgePendientes" style="display:none;">0</span>
+        </div>
+        <div class="admin-tab" data-section="aprobados">✅ Préstamos Aprobados</div>
+        <div class="admin-tab" data-section="libros">📚 Gestión de Libros</div>
+        <div class="admin-tab" data-section="trazabilidad">📊 Trazabilidad</div>
+        <div class="admin-tab" data-section="espera">
+          📋 Lista de Espera
+          <div style="font-size:11px; opacity:0.9; margin-top:2px;">(Cuando no hay stock)</div>
+        </div>
+        <div class="admin-tab" data-section="usuarios">👥 Gestión de Usuarios</div>
+        <div class="admin-tab" data-section="importar">📥 Importar CSV/Excel</div>
+      </div>
+    </div>
+
+    <!-- Sección: Solicitudes Pendientes -->
+    <div id="section-pendientes" class="section-content active">
+      <div class="bot-busqueda">
+        <strong>🔍 Búsqueda:</strong>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <input type="text" id="botBuscarPendientes" placeholder="Buscar por ID préstamo, nombre, documento, ficha..." style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;" />
+          <button onclick="filtrarPendientes()" style="background:#4caf50; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">🔍 Buscar</button>
+        </div>
+        <small style="color:#666; font-size:12px; margin-top:4px; display:block;">Puedes buscar por ID de préstamo completo o parcial, nombre del usuario, documento o número de ficha</small>
+      </div>
+      <h3 style="border-left:4px solid #ff9800; padding-left:12px;">⏳ Préstamos Pendientes</h3>
+      <div id="listaPendientes" class="relacionados-grid" style="grid-template-columns: 1fr; gap: 12px; margin-top:16px;"></div>
+    </div>
+
+    <!-- Sección: Solicitudes Aprobadas -->
+    <div id="section-aprobados" class="section-content">
+      <div class="bot-busqueda">
+        <strong>🤖 Bot de Búsqueda:</strong>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <input type="text" id="botBuscarAprobados" placeholder="Buscar por nombre, documento, elemento..." style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;" />
+          <button onclick="filtrarAprobados()" style="background:#4caf50; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">🔍 Buscar</button>
+        </div>
+      </div>
+      <h3 style="border-left:4px solid #4caf50; padding-left:12px;">✅ Préstamos Aprobados</h3>
+      <div id="listaAprobados" class="relacionados-grid" style="grid-template-columns: 1fr; gap: 12px; margin-top:16px;"></div>
+    </div>
+
+    <!-- Sección: Gestión de Libros -->
+    <div id="section-libros" class="section-content">
+      <div class="bot-busqueda">
+        <strong>🤖 Bot de Búsqueda:</strong>
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <input id="fCat" placeholder="Categoría" style="flex:1; min-width:200px; padding:10px; border:1px solid #ddd; border-radius:6px;" />
+          <input id="fCodigo" placeholder="Código inventario" style="flex:1; min-width:200px; padding:10px; border:1px solid #ddd; border-radius:6px;" />
+          <input id="fTitulo" placeholder="Título o autor" style="flex:1; min-width:200px; padding:10px; border:1px solid #ddd; border-radius:6px;" />
+          <button id="btnBuscar" style="background:#2196f3; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">🔍 Buscar</button>
+        </div>
+      </div>
+      <h3 style="border-left:4px solid #2196f3; padding-left:12px;">📚 Gestión de Libros</h3>
+      <div style="background:#fff; padding:16px; border:1px solid #e1e8ed; border-radius:8px; margin-top:16px; margin-bottom:16px;">
+        <div class="eliminar-todo-box">
+          <strong>⚠️ Zona de Peligro</strong>
+          <p style="margin:8px 0; font-size:14px;">Opciones de eliminación masiva</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+            <button class="btn-eliminar-todo" onclick="mostrarConfirmEliminar()">🗑️ Eliminar Todos los Libros</button>
+            <button class="btn-eliminar-todo" onclick="eliminarPorCategoriaAdmin()" style="background:#9c27b0;">📂 Eliminar por Categoría</button>
+          </div>
+          <div class="eliminar-confirm" id="confirmEliminar" style="display:none; background:#f8d7da; border:2px solid #dc3545; padding:12px; border-radius:8px; margin-top:8px;">
+            <p style="margin:0 0 8px 0; color:#721c24; font-weight:600;">⚠️ ESTA ACCIÓN NO SE PUEDE DESHACER</p>
+            <p style="margin:0 0 8px 0;">Escribe <strong>ELIMINAR TODO</strong> para confirmar:</p>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <input type="text" id="confirmText" placeholder="ELIMINAR TODO" style="padding:8px; border:2px solid #dc3545; border-radius:4px; width:200px;" />
+              <button onclick="eliminarTodosLosLibros()" style="background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">Confirmar</button>
+              <button onclick="cancelarEliminar()" style="background:#6c757d; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="listaInventario" class="relacionados-grid" style="grid-template-columns: 1fr; gap: 12px;"></div>
+    </div>
+
+    <!-- Sección: Trazabilidad -->
+    <div id="section-trazabilidad" class="section-content">
+      <h3 style="border-left:4px solid #9c27b0; padding-left:12px;">📊 Trazabilidad de Préstamos</h3>
+      <div style="background:#fff; padding:16px; border:1px solid #e1e8ed; border-radius:8px; margin-top:16px;">
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <select id="filtroTrazabilidad" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="aprobado">Aprobados</option>
+            <option value="rechazado">Rechazados</option>
+            <option value="devuelto">Devueltos</option>
+          </select>
+          <button onclick="cargarTrazabilidad()" style="background:#9c27b0; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">🔍 Ver</button>
+        </div>
+        <div id="trazabilidadContent"></div>
+      </div>
+    </div>
+
+    <!-- Sección: Lista de Espera -->
+    <div id="section-espera" class="section-content">
+      <h3 style="border-left:4px solid #9c27b0; padding-left:12px;">📋 Lista de Espera</h3>
+      <div id="listaEspera" class="relacionados-grid" style="grid-template-columns: 1fr; gap: 12px; margin-top:16px;"></div>
+    </div>
+
+    <!-- Sección: Gestión de Usuarios -->
+    <div id="section-usuarios" class="section-content">
+      <div class="bot-busqueda">
+        <strong>🔍 Búsqueda:</strong>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <input type="text" id="buscarUsuarios" placeholder="Buscar por nombre, documento, username, correo..." style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;" onkeyup="filtrarUsuarios()" />
+          <button onclick="abrirModalUsuario()" style="background:#4caf50; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">➕ Agregar Usuario</button>
+        </div>
+      </div>
+      <h3 style="border-left:4px solid #9c27b0; padding-left:12px;">👥 Gestión de Usuarios</h3>
+      <div id="listaUsuarios" style="margin-top:16px;"></div>
+    </div>
+
+    <!-- Sección: Importar -->
+    <div id="section-importar" class="section-content">
+      <h3 style="border-left:4px solid #17a2b8; padding-left:12px;">📥 Importar Inventario (CSV/Excel)</h3>
+      <div style="background:#fff; padding:20px; border:1px solid #e1e8ed; border-radius:8px; margin-top:16px;">
+        <form id="formImport">
+          <input type="file" name="file" accept=".csv,.xlsx,.xls" required style="margin-bottom:12px; padding:10px; border:1px solid #ddd; border-radius:6px; width:100%;" />
+          <button type="submit" style="background:#17a2b8; color:white; padding:12px 24px; border:none; border-radius:8px; cursor:pointer; font-weight:600; width:100%;">📥 Importar Archivo</button>
+    </form>
+        <div style="font-size:12px; color:#555; margin-top:12px; padding:12px; background:#f8f9fa; border-radius:6px;">
+          <strong>Formato esperado (cabeceras):</strong><br>
+          titulo, autor, isbn, editorial, anio_publicacion, categoria, subcategoria, descripcion, stock, cantidad_disponible, codigo_inventario, imagen_url
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para agregar/editar usuario -->
+    <div id="modalUsuario" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:white; padding:30px; border-radius:15px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto;">
+        <h2 id="modalUsuarioTitulo" style="margin-top:0;">Agregar Usuario</h2>
+        <form id="formUsuario" onsubmit="guardarUsuario(event)">
+          <input type="hidden" id="usuarioIdEdit">
+          <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Nombre</label>
+            <input type="text" id="usuarioNombre" required style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
+          </div>
+          <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Documento</label>
+            <input type="text" id="usuarioDocumento" required style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
+          </div>
+          <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Correo</label>
+            <input type="email" id="usuarioCorreo" style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
+          </div>
+          <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Username</label>
+            <input type="text" id="usuarioUsername" required style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
+          </div>
+          <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Contraseña <span id="passwordLabel">(requerida)</span></label>
+            <input type="password" id="usuarioPassword" style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
+          </div>
+          <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Rol</label>
+            <select id="usuarioRole" required style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
+              <option value="user">Usuario</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+            <button type="button" onclick="cerrarModalUsuario()" style="padding:10px 20px; border:none; border-radius:5px; cursor:pointer; background:#757575; color:white;">Cancelar</button>
+            <button type="submit" style="padding:10px 20px; border:none; border-radius:5px; cursor:pointer; background:#667eea; color:white; font-weight:600;">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Sistema de tabs
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const section = tab.getAttribute('data-section');
+        // Actualizar tabs activos
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        // Ocultar todas las secciones
+        document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+        // Mostrar sección seleccionada
+        const targetSection = document.getElementById(`section-${section}`);
+        if (targetSection) {
+          targetSection.classList.add('active');
+          // Cargar datos según sección
+          switch(section) {
+            case 'pendientes': cargarPendientes(); break;
+            case 'aprobados': cargarAprobados(); break;
+            case 'libros': cargarInventario(); break;
+            case 'trazabilidad': cargarTrazabilidad(); break;
+            case 'espera': cargarEspera(); break;
+            case 'usuarios': cargarUsuarios(); break;
+          }
+        }
+      });
+    });
+
+    // Cargar datos de solicitudes pendientes con información completa del usuario
+    let cacheUsuarios = {};
+    async function obtenerUsuarioInfo(idUsuario) {
+      if (cacheUsuarios[idUsuario]) return cacheUsuarios[idUsuario];
+      if (!idUsuario) return null;
+      try {
+        const res = await fetch(`/api/usuarios/${idUsuario}`);
+        if (res.ok) {
+          const data = await res.json();
+          cacheUsuarios[idUsuario] = data;
+          return data;
+        }
+      } catch(e) {}
+      return null;
+    }
+
+    async function cargarPendientes(){
+      const cont = document.getElementById('listaPendientes');
+      if (!cont) return;
+      cont.innerHTML = 'Cargando...';
+      try {
+        const res = await fetch('/prestamos?estado=pendiente');
+        const items = res.ok ? await res.json() : [];
+        if (!items.length) {
+          cont.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No hay solicitudes pendientes.</div>';
+          document.getElementById('badgePendientes').style.display = 'none';
+          return;
+        }
+        
+        // Actualizar badge
+        const badge = document.getElementById('badgePendientes');
+        if (items.length > 0) {
+          badge.textContent = items.length;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+
+        cont.innerHTML = '';
+        for (const p of items) {
+          // Usar datos del usuario desde la respuesta o buscar
+          const usuarioInfo = p.usuario || await obtenerUsuarioInfo(p.id_usuario);
+          const elementoInfo = p.elemento || null;
+          
+          const card = document.createElement('div');
+          card.style.background = '#fff';
+          card.style.padding = '16px';
+          card.style.border = '1px solid #e1e8ed';
+          card.style.borderRadius = '8px';
+          card.style.marginBottom = '12px';
+          
+          let usuarioHtml = '';
+          if (usuarioInfo) {
+            usuarioHtml = `
+              <div class="usuario-info" style="background:#e3f2fd; padding:12px; border-radius:8px; margin-top:8px; border-left:4px solid #2196f3;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:13px;">
+                  <div><strong>👤 Nombre:</strong> ${usuarioInfo.nombre || 'N/A'}</div>
+                  <div><strong>🆔 Documento:</strong> ${usuarioInfo.documento || p.id_usuario || 'N/A'}</div>
+                  <div><strong>📋 Ficha:</strong> ${usuarioInfo.numero_ficha || 'N/A'}</div>
+                </div>
+              </div>`;
+          }
+          
+          let elementoHtml = '';
+          if (elementoInfo) {
+            elementoHtml = `
+              <div style="background:#f1f8f4; padding:12px; border-radius:8px; margin-top:8px; border-left:4px solid #4caf50;">
+                <div style="font-size:13px;">
+                  <strong>📚 Elemento:</strong> ${elementoInfo.titulo || p.id_elemento.substring(0, 8) + '...'}<br>
+                  ${elementoInfo.autor ? `<strong>👤 Autor:</strong> ${elementoInfo.autor}<br>` : ''}
+                  ${elementoInfo.codigo_inventario ? `<strong>🔢 Código:</strong> ${elementoInfo.codigo_inventario}` : ''}
+                </div>
+              </div>`;
+          }
+          
+          card.innerHTML = `
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+              <div>
+                  <div><strong>🆔 ID Préstamo:</strong> <code style="background:#f5f5f5; padding:2px 6px; border-radius:4px;">${p.id}</code></div>
+                  <div style="font-size:12px; color:#666; margin-top:4px;"><strong>Fecha solicitud:</strong> ${new Date(p.creado_en).toLocaleString('es-ES')}</div>
+                </div>
+              </div>
+              ${usuarioHtml}
+              ${elementoHtml}
+              <div style="display:flex; gap:8px; margin-top:12px;">
+                <button data-id="${p.id}" class="btn-aprobar" style="background:#4caf50; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">✅ Aprobar</button>
+                <button data-id="${p.id}" class="btn-rechazar" style="background:#f44336; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">❌ Rechazar</button>
+              </div>
+            </div>`;
+          cont.appendChild(card);
+        }
+        bindAcciones();
+      } catch (e) {
+        cont.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando solicitudes</div>';
+      }
+    }
+
+    async function filtrarPendientes() {
+      const busqueda = document.getElementById('botBuscarPendientes').value.trim();
+      if (!busqueda) {
+        // Si está vacío, mostrar todos
+        document.querySelectorAll('#listaPendientes > div').forEach(card => {
+          card.style.display = 'block';
+        });
+        return;
+      }
+      
+      // Buscar por ID de préstamo, nombre, documento o ficha
+      const cards = document.querySelectorAll('#listaPendientes > div');
+      cards.forEach(card => {
+        const texto = card.textContent.toLowerCase();
+        const busquedaLower = busqueda.toLowerCase();
+        // Buscar en todo el texto (incluye ID, nombre, documento, ficha)
+        card.style.display = texto.includes(busquedaLower) ? 'block' : 'none';
+      });
+    }
+
+    async function cargarAprobados(){
+      const cont = document.getElementById('listaAprobados');
+      if (!cont) return;
+      cont.innerHTML = 'Cargando...';
+      try {
+        const res = await fetch('/prestamos?estado=aprobado');
+        const items = res.ok ? await res.json() : [];
+        if (!items.length) {
+          cont.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No hay préstamos aprobados.</div>';
+          return;
+        }
+        cont.innerHTML = '';
+        for (const p of items) {
+          // Usar datos del usuario desde la respuesta
+          const usuarioInfo = p.usuario || await obtenerUsuarioInfo(p.id_usuario);
+          const elementoInfo = p.elemento || null;
+          
+          const card = document.createElement('div');
+          card.style.background = '#fff';
+          card.style.padding = '16px';
+          card.style.border = '1px solid #e1e8ed';
+          card.style.borderRadius = '8px';
+          card.style.marginBottom = '12px';
+          
+          let usuarioHtml = '';
+          if (usuarioInfo) {
+            usuarioHtml = `
+              <div class="usuario-info" style="background:#e3f2fd; padding:12px; border-radius:8px; margin-top:8px; border-left:4px solid #2196f3;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:13px;">
+                  <div><strong>👤 Nombre:</strong> ${usuarioInfo.nombre || 'N/A'}</div>
+                  <div><strong>🆔 Documento:</strong> ${usuarioInfo.documento || p.id_usuario || 'N/A'}</div>
+                  <div><strong>📋 Ficha:</strong> ${usuarioInfo.numero_ficha || 'N/A'}</div>
+                </div>
+              </div>`;
+          }
+          
+          let elementoHtml = '';
+          if (elementoInfo) {
+            elementoHtml = `
+              <div style="background:#f1f8f4; padding:12px; border-radius:8px; margin-top:8px; border-left:4px solid #4caf50;">
+                <div style="font-size:13px;">
+                  <strong>📚 Elemento:</strong> ${elementoInfo.titulo || p.id_elemento.substring(0, 8) + '...'}<br>
+                  ${elementoInfo.autor ? `<strong>👤 Autor:</strong> ${elementoInfo.autor}` : ''}
+                </div>
+              </div>`;
+          }
+          
+          card.innerHTML = `
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+              <div>
+                  <div><strong>🆔 ID Préstamo:</strong> <code style="background:#f5f5f5; padding:2px 6px; border-radius:4px;">${p.id}</code></div>
+                  <div style="font-size:12px; color:#666; margin-top:4px;"><strong>Fecha préstamo:</strong> ${new Date(p.fecha_prestamo).toLocaleString('es-ES')}</div>
+                </div>
+              </div>
+              ${usuarioHtml}
+              ${elementoHtml}
+              <div style="margin-top:12px;">
+                <button data-id="${p.id}" class="btn-devolver" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">📥 Marcar Devuelto</button>
+              </div>
+            </div>`;
+          cont.appendChild(card);
+        }
+        bindAcciones();
+      } catch (e) {
+        cont.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando aprobados</div>';
+      }
+    }
+
+    async function filtrarAprobados() {
+      const busqueda = document.getElementById('botBuscarAprobados').value.toLowerCase();
+      const cards = document.querySelectorAll('#listaAprobados > div');
+      cards.forEach(card => {
+        const texto = card.textContent.toLowerCase();
+        card.style.display = texto.includes(busqueda) ? 'block' : 'none';
+      });
+    }
+    
+    let tipoFiltroInventario = 'todos';
+    function filtrarPorTipo(tipo) {
+      tipoFiltroInventario = tipo;
+      cargarInventario();
+    }
+
+    // Actualizar badge de mensajes en el header
+    async function actualizarBadgeMensajes() {
+      try {
+        const res = await fetch('/api/mensajes?admin=true');
+        const mensajes = res.ok ? await res.json() : [];
+        const noLeidos = mensajes.filter(m => !m.leido && m.id_destinatario === 'admin').length;
+        const badge = document.getElementById('badgeMensajesAdmin');
+        if (badge) {
+          if (noLeidos > 0) {
+            badge.textContent = noLeidos;
+            badge.style.display = 'flex';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      } catch(e) {}
+    }
+
+    // Funciones de inventario
+    async function cargarInventario(){
+      const cont = document.getElementById('listaInventario');
+      if (!cont) return;
+      cont.innerHTML = 'Cargando...';
+      try {
+        // Aplicar filtro de tipo si existe
+        const res = await fetch('/api/libros');
+        let items = res.ok ? await res.json() : [];
+        
+        // Filtrar por tipo (libro/PC/todos)
+        if (tipoFiltroInventario === 'libro') {
+          items = items.filter(x => {
+            const cat = (x.categoria || '').toLowerCase();
+            return cat === 'libros' || (!cat.includes('equipo') && !cat.includes('pc'));
+          });
+        } else if (tipoFiltroInventario === 'pc') {
+          items = items.filter(x => {
+            const cat = (x.categoria || '').toLowerCase();
+            return cat.includes('equipo') || cat.includes('pc') || cat.includes('portátil') || cat.includes('desktop') || cat.includes('tablet');
+          });
+        }
+        // Si es 'todos', no filtrar por tipo
+        
+        // Aplicar otros filtros
+        const fcat = (document.getElementById('fCat')?.value || '').toLowerCase();
+        const fcod = (document.getElementById('fCodigo')?.value || '').toLowerCase();
+        const ftit = (document.getElementById('fTitulo')?.value || '').toLowerCase();
+        const filtrados = items.filter(x => 
+          (!fcat || (x.categoria||'').toLowerCase().includes(fcat)) && 
+          (!fcod || (x.codigo_inventario||'').toLowerCase().includes(fcod)) &&
+          (!ftit || (x.titulo||'').toLowerCase().includes(ftit) || (x.autor||'').toLowerCase().includes(ftit))
+        );
+        if (!filtrados.length) {
+          cont.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">Sin resultados.</div>';
+          return;
+        }
+        cont.innerHTML = '';
+        for (const it of filtrados) {
+          const d = document.createElement('div');
+          d.style.background = '#fff';
+          d.style.padding = '12px';
+          d.style.border = '1px solid #e1e8ed';
+          d.style.borderRadius = '8px';
+          d.style.marginBottom = '12px';
+          d.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap: wrap;">
+              <div style="flex:1;">
+                <div><strong>${it.titulo || it.categoria || 'Elemento'}</strong> ${it.codigo_inventario ? `— <em>${it.codigo_inventario}</em>`:''}</div>
+                <div style="color:#666; font-size:13px; margin-top:4px;">Cat: ${it.categoria || ''} | Sub: ${it.subcategoria || ''}</div>
+                <div style="color:#666; font-size:13px;">Disp: ${it.cantidad_disponible}/${it.stock} | Prestados: ${it.cantidad_prestado}</div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button onclick="location.href='detalle_libro.html?id=${it.id}'" style="background:#2196f3; color:white; padding:6px 12px; border:none; border-radius:6px; cursor:pointer;">Ver</button>
+                <button onclick="eliminarLibro('${it.id}')" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:6px; cursor:pointer;">🗑️</button>
+              </div>
+            </div>`;
+          cont.appendChild(d);
+        }
+      } catch(e) {
+        cont.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando inventario</div>';
+      }
+    }
+
+    async function eliminarLibro(id) {
+      if (!confirm('¿Eliminar este libro del inventario?')) return;
+      try {
+        const res = await fetch(`/api/libros/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          alert('Libro eliminado');
+          cargarInventario();
+        } else {
+          alert('Error al eliminar');
+        }
+      } catch(e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    function mostrarConfirmEliminar() {
+      document.getElementById('confirmEliminar').style.display = 'block';
+      document.getElementById('confirmText').value = '';
+    }
+
+    function cancelarEliminar() {
+      document.getElementById('confirmEliminar').style.display = 'none';
+    }
+
+    async function eliminarTodosLosLibros() {
+      const confirmText = document.getElementById('confirmText').value;
+      if (confirmText !== 'ELIMINAR TODO') {
+        alert('Debes escribir exactamente: ELIMINAR TODO');
+        return;
+      }
+      if (!confirm('⚠️ ¿ESTÁS SEGURO? Esta acción eliminará TODOS los libros. Esta acción NO se puede deshacer.')) {
+        return;
+      }
+      
+      const confirmDiv = document.getElementById('confirmEliminar');
+      
+      try {
+        const res = await fetch('/api/libros');
+        const libros = res.ok ? await res.json() : [];
+        
+        if (libros.length === 0) {
+          alert('No hay libros para eliminar');
+          return;
+        }
+        
+        // Crear barra de progreso
+        confirmDiv.innerHTML = `
+          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <strong>Eliminando todos los libros...</strong>
+            <span id="porcentaje">0%</span>
+          </div>
+          <div style="background:#ccc; border-radius:10px; height:30px; overflow:hidden; position:relative; margin-bottom:10px;">
+            <div id="barraProgreso" style="background:linear-gradient(90deg, #4caf50, #8bc34a); height:100%; width:0%; transition:width 0.3s; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:14px;">
+              0%
+            </div>
+          </div>
+          <div style="font-size:14px; margin-bottom:10px;">
+            <span id="contadorProgreso">0 / ${libros.length}</span> libros eliminados
+          </div>
+        `;
+        
+        let eliminados = 0;
+        let errores = 0;
+        
+        for (let i = 0; i < libros.length; i++) {
+          const libro = libros[i];
+          try {
+            const delRes = await fetch(`/api/libros/${libro.id}`, { method: 'DELETE' });
+            if (delRes.ok) {
+              eliminados++;
+            } else {
+              errores++;
+            }
+          } catch (e) {
+            errores++;
+            console.error('Error eliminando', libro.id, e);
+          }
+          
+          // Actualizar progreso
+          const porcentaje = Math.round(((i + 1) / libros.length) * 100);
+          const barraProgreso = document.getElementById('barraProgreso');
+          const porcentajeText = document.getElementById('porcentaje');
+          const contadorProgreso = document.getElementById('contadorProgreso');
+          
+          if (barraProgreso) {
+            barraProgreso.style.width = porcentaje + '%';
+            barraProgreso.textContent = porcentaje + '%';
+          }
+          if (porcentajeText) porcentajeText.textContent = porcentaje + '%';
+          if (contadorProgreso) contadorProgreso.textContent = `${i + 1} / ${libros.length} libros eliminados`;
+          
+          await new Promise(r => setTimeout(r, 50)); // Pequeña pausa
+        }
+        
+        confirmDiv.innerHTML = `
+          <div style="background:#d4edda; padding:12px; border-radius:8px; color:#155724;">
+            ✓ Eliminación completada<br>
+            <strong>Total:</strong> ${libros.length}<br>
+            <strong>Eliminados:</strong> ${eliminados}<br>
+            <strong>Errores:</strong> ${errores}<br>
+            <button onclick="cancelarEliminar(); cargarInventario();" style="background:#4caf50; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-top:10px;">Cerrar</button>
+          </div>
+        `;
+        cargarInventario();
+      } catch (e) {
+        alert('Error al eliminar libros: ' + e.message);
+      }
+    }
+    
+    async function eliminarPorCategoriaAdmin() {
+      try {
+        // Obtener todas las categorías únicas de los elementos
+        const resLibros = await fetch('/api/libros');
+        const todosLosLibros = resLibros.ok ? await resLibros.json() : [];
+        
+        // Obtener categorías únicas
+        const categoriasUnicas = [...new Set(todosLosLibros.map(l => l.categoria).filter(c => c))];
+        
+        if (categoriasUnicas.length === 0) {
+          alert('No hay elementos con categorías definidas');
+          return;
+        }
+        
+        // Crear modal de selección
+        const modalHtml = categoriasUnicas.map((c, i) => 
+          `<button onclick="seleccionarCategoriaAdmin('${c}')" style="display:block; width:100%; padding:12px; margin:5px 0; background:#667eea; color:white; border:none; border-radius:6px; cursor:pointer; text-align:left;">
+            ${i + 1}. ${c}
+          </button>`
+        ).join('');
+        
+        const confirmDiv = document.getElementById('confirmEliminar');
+        confirmDiv.style.display = 'block';
+        confirmDiv.innerHTML = `
+          <div style="margin-bottom:15px;">
+            <strong>Selecciona la categoría a eliminar:</strong>
+          </div>
+          ${modalHtml}
+          <button onclick="cancelarEliminar()" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-top:15px; width:100%;">Cancelar</button>
+        `;
+      } catch (e) {
+        alert('Error al cargar categorías: ' + e.message);
+      }
+    }
+    
+    async function seleccionarCategoriaAdmin(categoria) {
+      const confirmDiv = document.getElementById('confirmEliminar');
+      
+      try {
+        const resLibros = await fetch('/api/libros');
+        const todosLosLibros = resLibros.ok ? await resLibros.json() : [];
+        
+        const elementosAEliminar = todosLosLibros.filter(l => 
+          l.categoria && l.categoria.toLowerCase() === categoria.toLowerCase()
+        );
+        
+        if (elementosAEliminar.length === 0) {
+          alert(`No hay elementos en la categoría "${categoria}"`);
+          cancelarEliminar();
+          return;
+        }
+        
+        if (!confirm(`¿Eliminar ${elementosAEliminar.length} elementos de la categoría "${categoria}"?\n\n⚠️ Esta acción NO se puede deshacer.`)) {
+          cancelarEliminar();
+          return;
+        }
+        
+        // Crear barra de progreso
+        confirmDiv.innerHTML = `
+          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <strong>Eliminando "${categoria}"...</strong>
+            <span id="porcentaje">0%</span>
+          </div>
+          <div style="background:#ccc; border-radius:10px; height:30px; overflow:hidden; position:relative; margin-bottom:10px;">
+            <div id="barraProgreso" style="background:linear-gradient(90deg, #4caf50, #8bc34a); height:100%; width:0%; transition:width 0.3s; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:14px;">
+              0%
+            </div>
+          </div>
+          <div style="font-size:14px; margin-bottom:10px;">
+            <span id="contadorProgreso">0 / ${elementosAEliminar.length}</span> elementos eliminados
+          </div>
+        `;
+        
+        let eliminados = 0;
+        let errores = 0;
+        
+        for (let i = 0; i < elementosAEliminar.length; i++) {
+          const elem = elementosAEliminar[i];
+          try {
+            const delRes = await fetch(`/api/libros/${elem.id}`, { method: 'DELETE' });
+            if (delRes.ok) {
+              eliminados++;
+            } else {
+              errores++;
+            }
+          } catch (e) {
+            errores++;
+            console.error('Error eliminando', elem.id, e);
+          }
+          
+          // Actualizar progreso
+          const porcentaje = Math.round(((i + 1) / elementosAEliminar.length) * 100);
+          const barraProgreso = document.getElementById('barraProgreso');
+          const porcentajeText = document.getElementById('porcentaje');
+          const contadorProgreso = document.getElementById('contadorProgreso');
+          
+          if (barraProgreso) {
+            barraProgreso.style.width = porcentaje + '%';
+            barraProgreso.textContent = porcentaje + '%';
+          }
+          if (porcentajeText) porcentajeText.textContent = porcentaje + '%';
+          if (contadorProgreso) contadorProgreso.textContent = `${i + 1} / ${elementosAEliminar.length} elementos eliminados`;
+          
+          await new Promise(r => setTimeout(r, 50));
+        }
+        
+        confirmDiv.innerHTML = `
+          <div style="background:#d4edda; padding:12px; border-radius:8px; color:#155724;">
+            ✓ Eliminación completada<br>
+            <strong>Categoría:</strong> ${categoria}<br>
+            <strong>Total:</strong> ${elementosAEliminar.length}<br>
+            <strong>Eliminados:</strong> ${eliminados}<br>
+            <strong>Errores:</strong> ${errores}<br>
+            <button onclick="cancelarEliminar(); cargarInventario();" style="background:#4caf50; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-top:10px;">Cerrar</button>
+          </div>
+        `;
+        cargarInventario();
+      } catch (e) {
+        alert('Error al eliminar por categoría: ' + e.message);
+      }
+    }
+
+    async function cargarEspera(){
+      const cont = document.getElementById('listaEspera');
+      if (!cont) return;
+      cont.innerHTML = 'Cargando...';
+      try {
+        const res = await fetch('/espera');
+        const items = res.ok ? await res.json() : [];
+        if (!items.length) {
+          cont.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No hay personas en espera.</div>';
+          return;
+        }
+        cont.innerHTML = '';
+        for (const w of items) {
+          const card = document.createElement('div');
+          card.style.background = '#fff';
+          card.style.padding = '12px';
+          card.style.border = '1px solid #e1e8ed';
+          card.style.borderRadius = '8px';
+          card.style.marginBottom = '12px';
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap: wrap;">
+              <div>
+                <div><strong>ID Espera:</strong> ${w.id.substring(0, 8)}...</div>
+                <div><strong>ID Elemento:</strong> ${w.id_elemento.substring(0, 8)}...</div>
+                <div><strong>Contacto:</strong> ${w.contacto || w.id_usuario || ''}</div>
+                <div><strong>Estado:</strong> <span style="color:${w.estado==='notificado'?'#4caf50':'#ff9800'}">${w.estado}</span></div>
+              </div>
+              <div>
+                <button data-id="${w.id}" class="btn-notificar" ${w.estado==='notificado'?'disabled':''} style="background:#9c27b0; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; ${w.estado==='notificado'?'opacity:0.5; cursor:not-allowed;':''}">✅ Marcar Notificado</button>
+              </div>
+            </div>`;
+          cont.appendChild(card);
+        }
+        bindAcciones();
+      } catch(e) {
+        cont.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando espera</div>';
+      }
+    }
+
+    async function cargarTrazabilidad() {
+      const cont = document.getElementById('trazabilidadContent');
+      if (!cont) return;
+      cont.innerHTML = 'Cargando...';
+      try {
+        const estado = document.getElementById('filtroTrazabilidad').value;
+        const url = estado ? `/prestamos?estado=${estado}` : '/prestamos';
+        const res = await fetch(url);
+        const items = res.ok ? await res.json() : [];
+        if (!items.length) {
+          cont.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No hay préstamos registrados.</div>';
+          return;
+        }
+        cont.innerHTML = '';
+        for (const p of items) {
+          const usuarioInfo = p.usuario || await obtenerUsuarioInfo(p.id_usuario);
+          const elementoInfo = p.elemento || null;
+          
+          const card = document.createElement('div');
+          card.style.background = '#fff';
+          card.style.padding = '16px';
+          card.style.border = '1px solid #e1e8ed';
+          card.style.borderRadius = '8px';
+          card.style.marginBottom = '12px';
+          const estadoColor = {
+            'pendiente': '#ff9800',
+            'aprobado': '#4caf50',
+            'rechazado': '#f44336',
+            'devuelto': '#2196f3'
+          }[p.estado] || '#666';
+          
+          let usuarioHtml = '';
+          if (usuarioInfo) {
+            usuarioHtml = `<div style="background:#e3f2fd; padding:8px; border-radius:6px; margin:8px 0; font-size:13px;">
+              <strong>👤 ${usuarioInfo.nombre || 'N/A'}</strong> - 🆔 ${usuarioInfo.documento || p.id_usuario || 'N/A'}
+            </div>`;
+          }
+          
+          let elementoHtml = '';
+          if (elementoInfo) {
+            elementoHtml = `<div style="background:#f1f8f4; padding:8px; border-radius:6px; margin:8px 0; font-size:13px;">
+              <strong>📚 ${elementoInfo.titulo || p.id_elemento.substring(0, 12) + '...'}</strong>
+              ${elementoInfo.codigo_inventario ? ` - 🔢 ${elementoInfo.codigo_inventario}` : ''}
+            </div>`;
+          }
+          
+          card.innerHTML = `
+            <div style="display:grid; grid-template-columns: 1fr auto; gap:16px;">
+              <div>
+                <div style="margin-bottom:8px;"><strong>🆔 ID Préstamo:</strong> <code>${p.id}</code></div>
+                ${usuarioHtml}
+                ${elementoHtml}
+                <div style="margin-bottom:8px; font-size:13px;"><strong>📅 Fecha préstamo:</strong> ${new Date(p.fecha_prestamo).toLocaleString('es-ES')}</div>
+                ${p.fecha_devolucion ? `<div style="font-size:13px;"><strong>📥 Fecha devolución:</strong> ${new Date(p.fecha_devolucion).toLocaleString('es-ES')}</div>` : ''}
+                ${p.observaciones ? `<div style="margin-top:8px; padding:8px; background:#f5f5f5; border-radius:6px; font-size:13px;"><strong>📝 Observaciones:</strong> ${p.observaciones}</div>` : ''}
+              </div>
+              <div>
+                <span style="background:${estadoColor}; color:white; padding:8px 16px; border-radius:20px; font-weight:600; text-transform:uppercase; display:inline-block;">${p.estado}</span>
+              </div>
+            </div>`;
+          cont.appendChild(card);
+        }
+      } catch(e) {
+        cont.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando trazabilidad</div>';
+      }
+    }
+
+    function bindAcciones(){
+      document.querySelectorAll('.btn-aprobar').forEach(b => {
+        // Remover listeners anteriores para evitar duplicados
+        const nuevoBtn = b.cloneNode(true);
+        b.parentNode.replaceChild(nuevoBtn, b);
+        
+        nuevoBtn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+          if (!confirm('¿Aprobar este préstamo?')) return;
+          
+          try {
+        const res = await fetch(`/prestamos/${id}/aprobar`, { method: 'PUT' });
+            const data = await res.json().catch(()=>({}));
+            
+            if (res.ok && data.ok) {
+              alert('✅ Préstamo aprobado correctamente');
+              // Recargar ambas secciones
+              await Promise.all([cargarPendientes(), cargarAprobados()]);
+            } else {
+              alert('❌ ' + (data.error || 'No se pudo aprobar'));
+            }
+          } catch (err) {
+            alert('Error de conexión: ' + err.message);
+          }
+        });
+      });
+      document.querySelectorAll('.btn-rechazar').forEach(b => b.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        if (!confirm('¿Rechazar esta solicitud?')) return;
+        const res = await fetch(`/prestamos/${id}/rechazar`, { method: 'PUT' });
+        if (res.ok) {
+          alert('❌ Rechazado');
+          cargarPendientes();
+        } else {
+          const d = await res.json().catch(()=>({}));
+          alert('❌ ' + (d.error || 'No se pudo rechazar'));
+        }
+      }));
+      document.querySelectorAll('.btn-devolver').forEach(b => b.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const res = await fetch(`/prestamos/${id}/devolver`, { method: 'PUT' });
+        if (res.ok) {
+          alert('📥 Devuelto');
+          cargarAprobados();
+          cargarEspera();
+        } else {
+          const d = await res.json().catch(()=>({}));
+          alert('❌ ' + (d.error || 'No se pudo marcar devuelto'));
+        }
+      }));
+      document.querySelectorAll('.btn-notificar').forEach(b => b.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const res = await fetch(`/espera/${id}/notificar`, { method: 'PUT' });
+        if (res.ok) {
+          alert('✅ Marcado como notificado');
+          cargarEspera();
+        } else {
+          const d = await res.json().catch(()=>({}));
+          alert('❌ ' + (d.error || 'No se pudo marcar'));
+        }
+      }));
+    }
+
+    // Protección: solo admins
+    (function(){
+      const t = localStorage.getItem('token');
+      if (t !== 'admin-token') {
+        alert('Acceso restringido a administradores');
+        window.location.href = 'principal.html';
+      }
+    })();
+
+    document.getElementById('formImport')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.currentTarget);
+      const res = await fetch('/import/csv', { method: 'POST', body: fd });
+      const data = await res.json().catch(()=>({}));
+      if (res.ok && data.ok) {
+        alert(`✅ Importados: ${data.creados} | Actualizados: ${data.actualizados || 0}`);
+        cargarInventario();
+      } else {
+        alert('❌ ' + (data.error || 'No se pudo importar'));
+      }
+    });
+
+    document.getElementById('btnBuscar')?.addEventListener('click', cargarInventario);
+
+    // Funciones de gestión de usuarios
+    async function cargarUsuarios() {
+      const cont = document.getElementById('listaUsuarios');
+      if (!cont) return;
+      cont.innerHTML = 'Cargando...';
+      try {
+        const res = await fetch('/api/usuarios');
+        const usuarios = res.ok ? await res.json() : [];
+        if (!usuarios.length) {
+          cont.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No hay usuarios registrados.</div>';
+          return;
+        }
+        cont.innerHTML = '';
+        for (const u of usuarios) {
+          const card = document.createElement('div');
+          card.style.background = '#fff';
+          card.style.padding = '16px';
+          card.style.border = '1px solid #e1e8ed';
+          card.style.borderRadius = '8px';
+          card.style.marginBottom = '12px';
+          const roleBadge = u.role === 'admin' ? '<span style="background:#f44336; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">ADMIN</span>' : '<span style="background:#4caf50; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">USUARIO</span>';
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                  <strong>${u.nombre}</strong> ${roleBadge}
+                </div>
+                <div style="color:#666; font-size:13px;">
+                  <div>🆔 Documento: ${u.documento}</div>
+                  <div>👤 Username: ${u.username}</div>
+                  ${u.correo ? `<div>✉️ Correo: ${u.correo}</div>` : ''}
+                  ${u.numero_ficha ? `<div>📋 Ficha: ${u.numero_ficha}</div>` : ''}
+                  <div style="margin-top:4px; font-size:11px; color:#999;">Registrado: ${u.creado_en ? new Date(u.creado_en).toLocaleDateString('es-ES') : 'N/A'}</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button onclick="editarUsuario('${u.id}', '${u.nombre.replace(/'/g, "\\'")}', '${u.documento}', '${u.correo || ''}', '${u.username}', '${u.role}')" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">✏️ Editar</button>
+                ${u.username !== 'admin' ? `<button onclick="eliminarUsuario('${u.id}', '${u.nombre.replace(/'/g, "\\'")}')" style="background:#dc3545; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">🗑️ Eliminar</button>` : ''}
+              </div>
+            </div>`;
+          cont.appendChild(card);
+        }
+      } catch(e) {
+        cont.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando usuarios</div>';
+      }
+    }
+
+    function filtrarUsuarios() {
+      const busqueda = document.getElementById('buscarUsuarios').value.toLowerCase();
+      const cards = document.querySelectorAll('#listaUsuarios > div');
+      cards.forEach(card => {
+        const texto = card.textContent.toLowerCase();
+        card.style.display = texto.includes(busqueda) ? 'block' : 'none';
+      });
+    }
+
+    function abrirModalUsuario() {
+      document.getElementById('modalUsuarioTitulo').textContent = 'Agregar Usuario';
+      document.getElementById('formUsuario').reset();
+      document.getElementById('usuarioIdEdit').value = '';
+      document.getElementById('usuarioPassword').required = true;
+      document.getElementById('passwordLabel').textContent = '(requerida)';
+      document.getElementById('modalUsuario').style.display = 'flex';
+    }
+
+    function editarUsuario(id, nombre, documento, correo, username, role) {
+      document.getElementById('modalUsuarioTitulo').textContent = 'Editar Usuario';
+      document.getElementById('usuarioIdEdit').value = id;
+      document.getElementById('usuarioNombre').value = nombre;
+      document.getElementById('usuarioDocumento').value = documento;
+      document.getElementById('usuarioCorreo').value = correo || '';
+      document.getElementById('usuarioUsername').value = username;
+      document.getElementById('usuarioRole').value = role;
+      document.getElementById('usuarioPassword').value = '';
+      document.getElementById('usuarioPassword').required = false;
+      document.getElementById('passwordLabel').textContent = '(dejar vacío para no cambiar)';
+      document.getElementById('modalUsuario').style.display = 'flex';
+    }
+
+    async function guardarUsuario(e) {
+      e.preventDefault();
+      const id = document.getElementById('usuarioIdEdit').value;
+      const data = {
+        nombre: document.getElementById('usuarioNombre').value,
+        documento: document.getElementById('usuarioDocumento').value,
+        correo: document.getElementById('usuarioCorreo').value,
+        username: document.getElementById('usuarioUsername').value,
+        role: document.getElementById('usuarioRole').value
+      };
+      
+      const password = document.getElementById('usuarioPassword').value;
+      if (password) {
+        data.password = password;
+      }
+      
+      try {
+        let res;
+        if (id) {
+          res = await fetch(`/api/usuarios/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        } else {
+          if (!password) {
+            alert('La contraseña es requerida para nuevos usuarios');
+            return;
+          }
+          res = await fetch('/api/usuarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        }
+        
+        const result = await res.json();
+        if (res.ok && result.ok !== false) {
+          alert('Usuario guardado correctamente');
+          cerrarModalUsuario();
+          cargarUsuarios();
+        } else {
+          alert('Error: ' + (result.error || 'No se pudo guardar'));
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function eliminarUsuario(id, nombre) {
+      if (!confirm(`¿Estás seguro de eliminar al usuario "${nombre}"?\n\n⚠️ Esta acción no se puede deshacer.`)) return;
+      try {
+        const res = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (res.ok && result.ok !== false) {
+          alert('Usuario eliminado correctamente');
+          cargarUsuarios();
+        } else {
+          alert('Error: ' + (result.error || 'No se pudo eliminar'));
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    function cerrarModalUsuario() {
+      document.getElementById('modalUsuario').style.display = 'none';
+    }
+
+    // Actualizar badge de mensajes cada 10 segundos
+    setInterval(actualizarBadgeMensajes, 10000);
+
+    // Cargar pendientes al inicio (por defecto)
+    cargarPendientes();
+    actualizarBadgeMensajes();
+  </script>
+</body>
+</html>

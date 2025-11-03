@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Favoritos - Biblioteca SENA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+  <style>
+    .favoritos-container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 30px;
+    }
+    .favoritos-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .favoritos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .favorito-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+    .favorito-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .favorito-card img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .favorito-card h3 {
+      font-size: 16px;
+      margin: 8px 0;
+      color: #2c3e50;
+    }
+    .favorito-card .autor {
+      font-size: 13px;
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+    .btn-quitar {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(231, 76, 60, 0.9);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s;
+    }
+    .btn-quitar:hover {
+      background: #e74c3c;
+    }
+    .vacio {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    .vacio h2 {
+      font-size: 24px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <h2 style="margin-left:16px; flex:1;">❤️ Mis Favoritos</h2>
+    <a href="principal.html" style="background:#667eea; color:white; padding:8px 16px; border:none; border-radius:6px; text-decoration:none; margin-right:8px;">← Volver</a>
+  </header>
+
+  <main class="content">
+    <div class="favoritos-container">
+      <div class="favoritos-header">
+        <h1>❤️ Mis Elementos Favoritos</h1>
+        <p style="color:#666;">Elementos que has marcado como favoritos</p>
+      </div>
+      
+      <div id="favoritosGrid" class="favoritos-grid">
+        <div class="vacio">
+          <h2>No tienes favoritos aún</h2>
+          <p>Agrega elementos a tus favoritos haciendo clic en el botón ❤️ en la página de detalles</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app_helpers.js" defer></script>
+  <script>
+    function obtenerFavoritos() {
+      const favoritos = localStorage.getItem('favoritos');
+      return favoritos ? JSON.parse(favoritos) : [];
+    }
+    
+    function quitarFavorito(idElemento) {
+      let favoritos = obtenerFavoritos();
+      favoritos = favoritos.filter(id => id !== idElemento);
+      localStorage.setItem('favoritos', JSON.stringify(favoritos));
+      cargarFavoritos();
+    }
+    
+    async function cargarFavoritos() {
+      const favoritos = obtenerFavoritos();
+      const grid = document.getElementById('favoritosGrid');
+      
+      if (favoritos.length === 0) {
+        grid.innerHTML = `
+          <div class="vacio" style="grid-column: 1 / -1;">
+            <h2>No tienes favoritos aún</h2>
+            <p>Agrega elementos a tus favoritos haciendo clic en el botón ❤️ en la página de detalles</p>
+          </div>
+        `;
+        return;
+      }
+      
+      grid.innerHTML = '';
+      
+      // Cargar información de cada favorito
+      for (const id of favoritos) {
+        try {
+          const res = await fetch(`/api/libros/${id}`);
+          if (res.ok) {
+            const elemento = await res.json();
+            const imgSrc = elemento.imagen ? 
+              (elemento.imagen.startsWith('uploads/') ? `/${elemento.imagen}` : elemento.imagen) : 
+              '/static/uploads/libro1.jpg';
+            
+            const card = document.createElement('div');
+            card.className = 'favorito-card';
+            card.innerHTML = `
+              <button class="btn-quitar" onclick="event.stopPropagation(); quitarFavorito('${id}')" title="Quitar de favoritos">×</button>
+              <img src="${imgSrc}" alt="${elemento.titulo || ''}" onerror="this.src='/static/uploads/libro1.jpg'">
+              <h3>${elemento.titulo || 'Sin título'}</h3>
+              <p class="autor">${elemento.autor || ''}</p>
+            `;
+            card.onclick = () => window.location.href = `detalle_libro.html?id=${id}`;
+            grid.appendChild(card);
+          }
+        } catch (e) {
+          console.error('Error cargando elemento:', e);
+        }
+      }
+    }
+    
+    cargarFavoritos();
+  </script>
+</body>
+</html>
+

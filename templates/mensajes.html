@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mensajes</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+  <style>
+    .mensaje-card {
+      background: white;
+      padding: 16px;
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 4px solid #2196f3;
+    }
+    .mensaje-card.leido {
+      opacity: 0.7;
+      border-left-color: #ccc;
+    }
+    .mensaje-card.enviado {
+      border-left-color: #4caf50;
+      background: #f1f8f4;
+    }
+    .form-mensaje {
+      background: white;
+      padding: 20px;
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    /* Estilos para el asistente en burbuja */
+    #botBubble {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      height: 400px;
+      background: #f0f7ff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      display: none;
+    }
+    #botBubble .header {
+      padding: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      background: #667eea;
+      color: white;
+      border-radius: 12px 12px 0 0;
+    }
+    #botBubble #botContent {
+      padding: 10px;
+      overflow-y: auto;
+      height: calc(100% - 40px);
+    }
+    #toggleBot {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <h2 style="margin-left:16px; flex:1;">💬 Mensajes</h2>
+    <button onclick="location.href='principal.html'" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">← Inicio</button>
+  </header>
+
+  <main class="content">
+    <!-- Enviar mensaje al admin -->
+    <div style="background:#fff; padding:20px; border:2px solid #4caf50; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 12px rgba(76,175,80,0.15);">
+      <h3 style="margin-top:0; color:#4caf50;">💬 Contactar al Administrador</h3>
+      <div style="background:#f1f8f4; padding:12px; border-radius:8px; margin-bottom:16px; font-size:13px; color:#555;">
+        📧 Puedes enviar mensajes directamente al administrador. Te responderá lo antes posible.
+      </div>
+      <form id="formEnviar" style="display:grid; gap:12px;">
+        <div>
+          <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Asunto</label>
+          <input type="text" id="asunto" placeholder="Ej: Consulta sobre préstamo, Problema con devolución..." style="width:100%; padding:12px; border:2px solid #ddd; border-radius:8px; font-size:14px;" />
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Mensaje</label>
+          <textarea id="contenido" rows="6" required placeholder="Escribe tu mensaje aquí..." style="width:100%; padding:12px; border:2px solid #ddd; border-radius:8px; font-size:14px; font-family:inherit; resize:vertical;"></textarea>
+        </div>
+        <button type="submit" style="background:#4caf50; color:white; padding:14px 28px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:16px; transition:all 0.3s;">📨 Enviar Mensaje</button>
+      </form>
+    </div>
+
+    <!-- Mensajes recibidos y enviados -->
+    <div>
+      <h3>📨 Mensajes Recibidos y Enviados</h3>
+      <button onclick="cargarMensajes()" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-bottom:12px;">🔄 Actualizar</button>
+      <div id="listaMensajes"></div>
+    </div>
+
+    <!-- Chats separados -->
+    <div id="mensajesContainer" style="display: flex; flex-direction: column; gap: 16px;">
+      <div id="chatAdmin" style="border: 1px solid #ccc; border-radius: 8px; padding: 16px;">
+        <h3>Chat con Administrador</h3>
+        <div id="mensajesAdmin" style="max-height: 200px; overflow-y: auto;"></div>
+      </div>
+      <div id="chatUsuarios" style="border: 1px solid #ccc; border-radius: 8px; padding: 16px;">
+        <h3>Chats con Usuarios</h3>
+        <div id="mensajesUsuarios" style="max-height: 200px; overflow-y: auto;"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Burbuja del asistente -->
+  <div id="botBubble">
+    <div class="header">Asistente Inteligente</div>
+    <div id="botContent">
+      <!-- Aquí se mostrarán los mensajes del bot -->
+    </div>
+  </div>
+  <button id="toggleBot">🤖</button>
+
+  <script>
+    // Obtener ID del usuario actual
+    function obtenerMiId() {
+      // Intentar desde localStorage guardado
+      const miIdGuardado = localStorage.getItem('miId');
+      if (miIdGuardado) return miIdGuardado;
+      
+      // Intentar desde token
+      const token = localStorage.getItem('token');
+      if (token && token.startsWith('user-')) {
+        const id = token.replace('user-', '');
+        localStorage.setItem('miId', id);
+        return id;
+      }
+      
+      // Intentar desde el usuario guardado
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          const id = user.id || user.documento;
+          if (id) {
+            localStorage.setItem('miId', id);
+            return id;
+          }
+        } catch (e) {}
+      }
+      
+      // Si no hay, redirigir al login
+      alert('Necesitas iniciar sesión primero');
+      window.location.href = 'login.html';
+      return null;
+    }
+
+    const miId = obtenerMiId();
+
+    let cacheUsuarios = {};
+    async function obtenerNombreUsuario(idUsuario) {
+      if (!idUsuario || idUsuario === 'admin') return 'Administrador';
+      if (cacheUsuarios[idUsuario]) return cacheUsuarios[idUsuario];
+      try {
+        const res = await fetch(`/api/usuarios/${idUsuario}`);
+        if (res.ok) {
+          const user = await res.json();
+          const nombre = user.nombre || user.documento || idUsuario;
+          cacheUsuarios[idUsuario] = nombre;
+          return nombre;
+        }
+      } catch (e) {}
+      return idUsuario;
+    }
+
+    // Función para cargar mensajes por chat
+    async function cargarMensajes() {
+      if (!miId) {
+        alert('Necesitas identificarte primero');
+        return;
+      }
+      const lista = document.getElementById('listaMensajes');
+      lista.innerHTML = 'Cargando mensajes...';
+      
+      try {
+        const res = await fetch(`/api/mensajes?usuario=${miId}`);
+        const mensajes = res.ok ? await res.json() : [];
+        
+        if (mensajes.length === 0) {
+          lista.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">No tienes mensajes</div>';
+          return;
+        }
+        
+        // Obtener todos los nombres de usuarios primero
+        const usuariosUnicos = new Set();
+        mensajes.forEach(msg => {
+          if (msg.id_remitente && msg.id_remitente !== 'admin') usuariosUnicos.add(msg.id_remitente);
+          if (msg.id_destinatario && msg.id_destinatario !== 'admin') usuariosUnicos.add(msg.id_destinatario);
+        });
+        
+        // Cargar todos los nombres en paralelo
+        await Promise.all(Array.from(usuariosUnicos).map(id => obtenerNombreUsuario(id)));
+        
+        let html = '';
+        for (const msg of mensajes) {
+          const esMio = msg.id_remitente === miId;
+          const esRecibido = msg.id_destinatario === miId;
+          const clase = esMio ? 'enviado' : (msg.leido ? 'leido' : '');
+          const fecha = new Date(msg.creado_en).toLocaleString('es-ES');
+          
+          // Obtener nombres de usuarios (ya están en cache)
+          const nombreRemitente = msg.id_remitente === 'admin' ? 'Administrador' : (cacheUsuarios[msg.id_remitente] || msg.id_remitente);
+          const nombreDestinatario = msg.id_destinatario === 'admin' ? 'Administrador' : (cacheUsuarios[msg.id_destinatario] || msg.id_destinatario);
+          
+          // Si es tipo chat y el otro usuario no es admin, mostrar botón para responder
+          const esChat = msg.tipo === 'chat';
+          const otroUsuarioId = esMio ? msg.id_destinatario : msg.id_remitente;
+          const puedeResponder = esChat && otroUsuarioId !== 'admin' && otroUsuarioId !== miId;
+          
+          html += `<div class="mensaje-card ${clase}">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+              <div>
+                <strong>${esMio ? '📤 Enviado a' : '📥 De'}: ${esMio ? nombreDestinatario : nombreRemitente}</strong>
+                ${msg.asunto ? `<div style="color:#667eea; margin-top:4px;">${msg.asunto}</div>` : ''}
+              </div>
+              <div style="font-size:12px; color:#999;">${fecha}</div>
+            </div>
+            <div style="margin-top:8px;">${msg.contenido}</div>
+            ${!msg.leido && esRecibido ? `<button onclick="marcarLeido('${msg.id}')" style="background:#757575; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:11px; margin-top:8px;">Marcar como leído</button>` : ''}
+            ${puedeResponder ? `<button onclick="responderUsuario('${otroUsuarioId}', '${nombreRemitente}')" style="background:#2196f3; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-size:12px; margin-top:8px; margin-left:8px;">💬 Responder</button>` : ''}
+          </div>`;
+        }
+        lista.innerHTML = html;
+      } catch (e) {
+        lista.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando mensajes</div>';
+      }
+      
+      // Cargar mensajes en chats separados
+      try {
+        const res = await fetch('/api/mensajes');
+        const mensajes = res.ok ? await res.json() : [];
+
+        const mensajesAdmin = mensajes.filter(m => m.destinatario === 'admin');
+        const mensajesUsuarios = mensajes.filter(m => m.destinatario !== 'admin');
+
+        document.getElementById('mensajesAdmin').innerHTML = mensajesAdmin.map(m => `<div>${m.texto}</div>`).join('');
+        document.getElementById('mensajesUsuarios').innerHTML = mensajesUsuarios.map(m => `<div>${m.texto}</div>`).join('');
+      } catch (e) {
+        console.error('Error cargando mensajes:', e);
+      }
+    }
+    
+    function responderUsuario(idDestinatario, nombreDestinatario) {
+      const mensaje = prompt(`Responder a ${nombreDestinatario}:`, '');
+      if (!mensaje) return;
+      
+      fetch('/api/mensajes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_remitente: miId,
+          id_destinatario: idDestinatario,
+          asunto: 'Respuesta',
+          contenido: mensaje,
+          tipo: 'chat'
+        })
+      }).then(res => res.json()).then(data => {
+        if (data.ok) {
+          alert('✓ Mensaje enviado');
+          cargarMensajes();
+        } else {
+          alert('✗ ' + (data.error || 'Error al enviar'));
+        }
+      }).catch(e => alert('Error de conexión'));
+    }
+
+    async function marcarLeido(id) {
+      await fetch(`/api/mensajes/${id}/leer`, { method: 'PUT' });
+      cargarMensajes();
+    }
+
+    document.getElementById('formEnviar').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!miId) {
+        alert('Necesitas identificarte primero');
+        return;
+      }
+      
+      const asunto = document.getElementById('asunto').value;
+      const contenido = document.getElementById('contenido').value;
+      
+      if (!contenido.trim()) {
+        alert('Por favor escribe un mensaje');
+        return;
+      }
+      
+      try {
+        const payload = {
+          id_remitente: miId,
+          id_destinatario: 'admin',
+          asunto: asunto || 'Sin asunto',
+          contenido: contenido,
+          tipo: 'consulta'
+        };
+        
+        console.log('Enviando mensaje:', payload);
+        
+        const res = await fetch('/api/mensajes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json().catch(()=>({}));
+        
+        if (res.ok && data.ok) {
+          alert('✓ Mensaje enviado correctamente');
+          document.getElementById('formEnviar').reset();
+          cargarMensajes();
+        } else {
+          console.error('Error respuesta:', data);
+          alert('✗ ' + (data.error || 'Error al enviar mensaje. Verifica tu conexión.'));
+        }
+      } catch (e) {
+        console.error('Error al enviar:', e);
+        alert('Error de conexión: ' + e.message);
+      }
+    });
+
+    // Chat con IA mejorado
+    async function buscarLibrosIA(consulta) {
+      try {
+        const res = await fetch('/api/libros');
+        const todosLibros = res.ok ? await res.json() : [];
+        
+        // Búsqueda inteligente simple
+        const palabras = consulta.toLowerCase().split(' ').filter(p => p.length > 0);
+        const resultados = todosLibros.filter(libro => {
+          const texto = `${libro.titulo || ''} ${libro.autor || ''} ${libro.categoria || ''} ${libro.subcategoria || ''} ${libro.descripcion || ''}`.toLowerCase();
+          return palabras.some(pal => texto.includes(pal));
+        });
+        
+        return resultados.slice(0, 10); // Máximo 10 resultados
+      } catch (e) {
+        return [];
+      }
+    }
+
+    async function obtenerMisPrestamos() {
+      if (!miId) return [];
+      try {
+        const res = await fetch(`/prestamos?usuario=${miId}`);
+        return res.ok ? await res.json() : [];
+      } catch(e) {
+        return [];
+      }
+    }
+
+    function procesarConsultaIA(consulta) {
+      const texto = consulta.toLowerCase().trim();
+      
+      // Comandos de ayuda
+      if (texto.includes('ayuda') || texto.includes('comandos') || texto.includes('qué puedo')) {
+        return {
+          tipo: 'ayuda',
+          mensaje: `🤖 <strong>Comandos disponibles:</strong><br><br>
+• <strong>Buscar libros:</strong> "libros de tecnología", "agricultura", "historia"<br>
+• <strong>Ver mis préstamos:</strong> "mis préstamos", "qué tengo prestado"<br>
+• <strong>Fechas de devolución:</strong> "cuándo devolver", "fecha de devolución"<br>
+• <strong>Disponibilidad:</strong> "libros disponibles", "qué hay disponible"<br>
+• <strong>Ayuda:</strong> "ayuda", "comandos"<br><br>
+Solo escribe tu pregunta de forma natural y te ayudaré.`
+        };
+      }
+      
+      // Consulta sobre préstamos del usuario
+      if (texto.includes('préstamo') || texto.includes('prestamo') || texto.includes('tengo prestado') || texto.includes('qué tengo')) {
+        return { tipo: 'prestamos' };
+      }
+      
+      // Consulta sobre fechas de devolución
+      if (texto.includes('devolver') || texto.includes('fecha') || texto.includes('cuándo') || texto.includes('cuando')) {
+        return { tipo: 'fechas' };
+      }
+      
+      // Búsqueda de libros
+      if (texto.includes('buscar') || texto.includes('libro') || texto.includes('disponible') || texto.length > 3) {
+        return { tipo: 'busqueda', query: consulta };
+      }
+      
+      // Por defecto, búsqueda
+      return { tipo: 'busqueda', query: consulta };
+    }
+
+    function agregarMensajeChat(autor, mensaje, esIA = false) {
+      const chat = document.getElementById('botContent');
+      const hora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      const div = document.createElement('div');
+      div.style.cssText = `padding:10px; margin-bottom:8px; border-radius:8px; ${esIA ? 'background:#e3f2fd; margin-left:20px;' : 'background:#f1f8f4; margin-right:20px;'}`;
+      div.innerHTML = `
+        <div style="font-size:11px; color:#999; margin-bottom:4px;">${esIA ? '🤖 Asistente' : '👤 Tú'} - ${hora}</div>
+        <div style="font-size:14px; color:#333;">${mensaje}</div>
+      `;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    document.getElementById('formIA').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('inputIA');
+      const consulta = input.value.trim();
+      if (!consulta) return;
+      
+      // Mostrar pregunta del usuario
+      agregarMensajeChat('usuario', consulta, false);
+      input.value = '';
+      
+      // Procesar consulta
+      const procesado = procesarConsultaIA(consulta);
+      let respuesta = '';
+      
+      if (procesado.tipo === 'ayuda') {
+        respuesta = procesado.mensaje;
+      } else if (procesado.tipo === 'prestamos') {
+        const prestamos = await obtenerMisPrestamos();
+        if (prestamos.length === 0) {
+          respuesta = '📚 No tienes préstamos registrados en este momento.';
+        } else {
+          const activos = prestamos.filter(p => p.estado === 'aprobado');
+          const pendientes = prestamos.filter(p => p.estado === 'pendiente');
+          
+          respuesta = `📚 Tienes <strong>${prestamos.length}</strong> préstamo(s) en total:\n\n`;
+          
+          if (activos.length > 0) {
+            respuesta += `<strong>✅ Aprobados (${activos.length}):</strong>\n`;
+            for (let idx = 0; idx < activos.length; idx++) {
+              const p = activos[idx];
+              const fecha = new Date(p.fecha_prestamo).toLocaleDateString('es-ES');
+              const fechaLimite = new Date(p.fecha_prestamo);
+              fechaLimite.setDate(fechaLimite.getDate() + 7);
+              
+              // Usar datos del elemento desde la respuesta o buscar
+              let nombreElemento = p.id_elemento.substring(0, 12) + '...';
+              if (p.elemento) {
+                nombreElemento = p.elemento.titulo || nombreElemento;
+              } else {
+                try {
+                  const resLibro = await fetch(`/api/libros/${p.id_elemento}`);
+                  if (resLibro.ok) {
+                    const libro = await resLibro.json();
+                    nombreElemento = libro.titulo || nombreElemento;
+                  }
+                } catch(e) {}
+              }
+              
+              respuesta += `${idx + 1}. <strong>${nombreElemento}</strong>\n`;
+              respuesta += `   📅 Prestado: ${fecha}\n`;
+              respuesta += `   ⏰ Devolver antes: ${fechaLimite.toLocaleDateString('es-ES')}\n\n`;
+            }
+          }
+          
+          if (pendientes.length > 0) {
+            respuesta += `<strong>⏳ Pendientes (${pendientes.length}):</strong>\n`;
+            pendientes.forEach((p, idx) => {
+              let nombreElemento = p.id_elemento.substring(0, 12) + '...';
+              respuesta += `${idx + 1}. ${nombreElemento} - Esperando aprobación\n`;
+            });
+            respuesta += '\n';
+          }
+          
+          respuesta += '💡 Ve a "Mis Préstamos" para más detalles.';
+        }
+      } else if (procesado.tipo === 'fechas') {
+        const prestamos = await obtenerMisPrestamos();
+        const activos = prestamos.filter(p => p.estado === 'aprobado');
+        if (activos.length === 0) {
+          respuesta = 'No tienes préstamos activos que devolver.';
+        } else {
+          respuesta = `📅 <strong>Fechas de tus préstamos:</strong>\n\n`;
+          activos.forEach((p, idx) => {
+            const fecha = new Date(p.fecha_prestamo).toLocaleDateString('es-ES');
+            respuesta += `${idx + 1}. Elemento: ${p.id_elemento.substring(0, 8)}...\n`;
+            respuesta += `   Prestado el: ${fecha}\n`;
+            respuesta += `   Recuerda devolverlo a tiempo.\n\n`;
+          });
+        }
+      } else {
+        // Búsqueda de libros
+        const resultados = await buscarLibrosIA(procesado.query);
+        if (resultados.length === 0) {
+          respuesta = 'No encontré libros que coincidan con tu búsqueda. Intenta con otras palabras clave como: tecnología, historia, ciencia, agricultura, etc.';
+        } else {
+          respuesta = `📚 Encontré <strong>${resultados.length}</strong> libro(s) relacionado(s):\n\n`;
+          resultados.forEach((libro, idx) => {
+            const disponible = (libro.cantidad_disponible || 0) > 0 ? '✅ Disponible' : '❌ No disponible';
+            respuesta += `${idx + 1}. <strong>${libro.titulo || 'Sin título'}</strong>\n`;
+            respuesta += `   👤 Autor: ${libro.autor || 'N/A'}\n`;
+            respuesta += `   📖 ${disponible} (${libro.cantidad_disponible || 0} disponibles)\n`;
+            respuesta += `   🔗 <a href="detalle_libro.html?id=${libro.id}" style="color:#2196f3; text-decoration:underline;">Ver detalles y solicitar</a>\n\n`;
+          });
+          respuesta += '💡 Puedes hacer clic en "Ver detalles" para solicitar el préstamo.';
+        }
+      }
+      
+      // Mostrar respuesta de IA
+      agregarMensajeChat('ia', respuesta.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'), true);
+    });
+
+    // Mostrar mensaje de bienvenida
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        agregarMensajeChat('ia', '¡Hola! Soy tu asistente de biblioteca. Puedes preguntarme sobre libros, préstamos o escribir "ayuda" para ver todos los comandos disponibles. 😊', true);
+      }, 500);
+    });
+
+    // Mostrar el bot y habilitar el compositor de mensajes desde el inicio
+    window.addEventListener('DOMContentLoaded', () => {
+      const chatIA = document.getElementById('chatIA');
+
+      // Asegurar que el contenedor del chat esté visible
+      chatIA.style.display = 'block';
+
+      // Mostrar el mensaje inicial del bot
+      chatIA.innerHTML = `
+        <div style="padding:10px; margin-bottom:8px; border-radius:8px; background:#e3f2fd;">
+          <div style="font-size:11px; color:#999; margin-bottom:4px;">🤖 Asistente - ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+          <div style="font-size:14px; color:#333;">¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?</div>
+        </div>`;
+    });
+
+    // Cargar mensajes al inicio
+    if (miId) {
+      cargarMensajes();
+      // Auto-refresh cada 10 segundos
+      setInterval(cargarMensajes, 10000);
+    }
+
+    // Toggle burbuja del bot
+    document.getElementById('toggleBot').addEventListener('click', () => {
+      const botBubble = document.getElementById('botBubble');
+      botBubble.style.display = botBubble.style.display === 'none' ? 'block' : 'none';
+    });
+  </script>
+</body>
+</html>
+

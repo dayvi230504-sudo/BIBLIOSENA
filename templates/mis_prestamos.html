@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Préstamos</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+  <style>
+    .prestamo-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-left: 5px solid #2196f3;
+    }
+    .prestamo-card.vencido {
+      border-left-color: #f44336;
+      background: #ffebee;
+    }
+    .prestamo-card.proximo {
+      border-left-color: #ff9800;
+      background: #fff3e0;
+    }
+    .prestamo-card.normal {
+      border-left-color: #4caf50;
+      background: #f1f8f4;
+    }
+    .sancion-alert {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-weight: 600;
+      color: #856404;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .info-item {
+      padding: 8px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .info-item strong {
+      display: block;
+      color: #667eea;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <h2 style="margin-left:16px; flex:1;">📚 Mis Préstamos</h2>
+    <button onclick="location.href='principal.html'" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">← Inicio</button>
+  </header>
+
+  <main class="content">
+    <div style="background:linear-gradient(135deg, #667eea, #764ba2); padding:20px; border-radius:12px; margin-bottom:24px; color:white;">
+      <h3 style="margin-top:0; color:white;">📋 Resumen de Préstamos</h3>
+      <div id="resumenPrestamos" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-top:16px;">
+        <div style="background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; text-align:center;">
+          <div style="font-size:24px; font-weight:bold;" id="totalPrestamos">0</div>
+          <div style="font-size:12px; opacity:0.9;">Total</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; text-align:center;">
+          <div style="font-size:24px; font-weight:bold;" id="activosPrestamos">0</div>
+          <div style="font-size:12px; opacity:0.9;">Activos</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; text-align:center;">
+          <div style="font-size:24px; font-weight:bold;" id="vencidosPrestamos">0</div>
+          <div style="font-size:12px; opacity:0.9;">Vencidos</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; text-align:center;">
+          <div style="font-size:24px; font-weight:bold;" id="sancionesPrestamos">0</div>
+          <div style="font-size:12px; opacity:0.9;">Sanciones</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3>📖 Mis Elementos Prestados</h3>
+      <button onclick="cargarMisPrestamos()" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-bottom:16px;">🔄 Actualizar</button>
+      <div id="listaPrestamos"></div>
+    </div>
+
+    <div style="margin-top:32px;">
+      <h3>⚠️ Mis Sanciones</h3>
+      <div id="listaSanciones"></div>
+    </div>
+  </main>
+
+  <script>
+    // Obtener ID del usuario
+    function obtenerMiId() {
+      const miIdGuardado = localStorage.getItem('miId');
+      if (miIdGuardado) return miIdGuardado;
+      
+      const token = localStorage.getItem('token');
+      if (token && token.startsWith('user-')) {
+        const id = token.replace('user-', '');
+        localStorage.setItem('miId', id);
+        return id;
+      }
+      
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          const id = user.id || user.documento;
+          if (id) {
+            localStorage.setItem('miId', id);
+            return id;
+          }
+        } catch (e) {}
+      }
+      
+      alert('Necesitas iniciar sesión primero');
+      window.location.href = 'login.html';
+      return null;
+    }
+
+    const miId = obtenerMiId();
+
+    // Calcular fecha límite (7 días después del préstamo)
+    function calcularFechaLimite(fechaPrestamo) {
+      const fecha = new Date(fechaPrestamo);
+      fecha.setDate(fecha.getDate() + 7); // 7 días de préstamo
+      return fecha;
+    }
+
+    function estaVencido(fechaLimite) {
+      return new Date() > new Date(fechaLimite);
+    }
+
+    function diasRestantes(fechaLimite) {
+      const hoy = new Date();
+      const limite = new Date(fechaLimite);
+      const diff = limite - hoy;
+      const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return dias;
+    }
+
+    async function cargarMisPrestamos() {
+      if (!miId) return;
+      
+      const lista = document.getElementById('listaPrestamos');
+      lista.innerHTML = 'Cargando préstamos...';
+      
+      try {
+        // Cargar préstamos (buscar por ID, documento o username)
+        // Intentar múltiples formas de búsqueda
+        let prestamos = [];
+        try {
+          // Primero intentar con el ID guardado
+          let res = await fetch(`/prestamos?usuario=${miId}`);
+          if (res.ok) {
+            prestamos = await res.json();
+          }
+          
+          // Si no hay resultados, intentar con documento o username del token
+          if (prestamos.length === 0) {
+            const token = localStorage.getItem('token');
+            if (token && token.startsWith('user-')) {
+              const tokenId = token.replace('user-', '');
+              if (tokenId !== miId) {
+                res = await fetch(`/prestamos?usuario=${tokenId}`);
+                if (res.ok) {
+                  prestamos = await res.json();
+                }
+              }
+            }
+            
+            // También intentar con datos del usuario guardados
+            const userData = localStorage.getItem('userData');
+            if (userData && prestamos.length === 0) {
+              try {
+                const user = JSON.parse(userData);
+                if (user.documento && user.documento !== miId) {
+                  res = await fetch(`/prestamos?usuario=${user.documento}`);
+                  if (res.ok) {
+                    prestamos = await res.json();
+                  }
+                }
+              } catch(e) {}
+            }
+          }
+        } catch(e) {
+          console.error('Error cargando préstamos:', e);
+        }
+        
+        console.log('ID usuario:', miId);
+        console.log('Préstamos cargados:', prestamos);
+        
+        // Cargar sanciones (por ahora vacío hasta implementar)
+        const sanciones = []; // TODO: Implementar endpoint de sanciones
+        
+        // Actualizar resumen
+        const activos = prestamos.filter(p => p.estado === 'aprobado');
+        const vencidos = activos.filter(p => {
+          const limite = calcularFechaLimite(p.fecha_prestamo);
+          return estaVencido(limite);
+        });
+        
+        document.getElementById('totalPrestamos').textContent = prestamos.length;
+        document.getElementById('activosPrestamos').textContent = activos.length;
+        document.getElementById('vencidosPrestamos').textContent = vencidos.length;
+        document.getElementById('sancionesPrestamos').textContent = sanciones.length;
+        
+        if (prestamos.length === 0) {
+          lista.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No tienes préstamos registrados.</div>';
+          return;
+        }
+        
+        // Cargar información de los elementos
+        let html = '';
+        for (const prestamo of prestamos) {
+          // Usar datos del elemento desde la respuesta o buscar
+          let libro = prestamo.elemento || null;
+          if (!libro) {
+            const resLibro = await fetch(`/api/libros/${prestamo.id_elemento}`).catch(() => null);
+            libro = resLibro && resLibro.ok ? await resLibro.json().catch(() => null) : null;
+          }
+          
+          const fechaPrestamo = new Date(prestamo.fecha_prestamo);
+          const fechaLimite = calcularFechaLimite(prestamo.fecha_prestamo);
+          const vencido = estaVencido(fechaLimite);
+          const diasRest = diasRestantes(fechaLimite);
+          
+          let clase = 'normal';
+          if (prestamo.estado === 'aprobado') {
+            if (vencido) {
+              clase = 'vencido';
+            } else if (diasRest <= 2) {
+              clase = 'proximo';
+            }
+          }
+          
+          const estadoTexto = {
+            'pendiente': '⏳ Pendiente de aprobación',
+            'aprobado': '✅ Aprobado',
+            'rechazado': '❌ Rechazado',
+            'devuelto': '📥 Devuelto'
+          }[prestamo.estado] || prestamo.estado;
+          
+          html += `<div class="prestamo-card ${clase}">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
+              <div>
+                <h4 style="margin:0 0 8px 0; color:#333;">${libro ? (libro.titulo || libro.categoria || 'Elemento') : prestamo.id_elemento.substring(0, 12) + '...'}</h4>
+                <div style="font-size:14px; color:#666;">Estado: ${estadoTexto}</div>
+              </div>
+              <div style="text-align:right; font-size:12px; color:#999;">
+                ${prestamo.creado_en ? new Date(prestamo.creado_en).toLocaleDateString('es-ES') : ''}
+              </div>
+            </div>
+            ${libro ? `
+              <div style="background:rgba(255,255,255,0.6); padding:12px; border-radius:8px; margin-bottom:12px;">
+                <div><strong>📖 Autor:</strong> ${libro.autor || 'N/A'}</div>
+                <div><strong>🏷️ Categoría:</strong> ${libro.categoria || 'N/A'}</div>
+                ${libro.codigo_inventario ? `<div><strong>🔢 Código:</strong> ${libro.codigo_inventario}</div>` : ''}
+              </div>
+            ` : ''}
+            ${prestamo.estado === 'aprobado' ? `
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>📅 Fecha de préstamo</strong>
+                  ${fechaPrestamo.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
+                <div class="info-item ${vencido ? 'vencido' : ''}">
+                  <strong>⏰ Fecha límite</strong>
+                  ${fechaLimite.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
+                <div class="info-item ${vencido ? 'vencido' : (diasRest <= 2 ? 'proximo' : '')}">
+                  <strong>${vencido ? '⚠️ Días vencidos' : '⏳ Días restantes'}</strong>
+                  ${vencido ? Math.abs(diasRest) + ' días' : diasRest + ' días'}
+                </div>
+              </div>
+              ${vencido ? `
+                <div class="sancion-alert">
+                  ⚠️ Este préstamo está VENCIDO. Por favor devuélvelo lo antes posible para evitar sanciones.
+                </div>
+              ` : diasRest <= 2 ? `
+                <div style="background:#fff3cd; border:2px solid #ffc107; padding:12px; border-radius:8px; margin-top:12px; color:#856404;">
+                  ⏰ Este préstamo vence pronto (${diasRest} día(s)). Recuerda devolverlo a tiempo.
+                </div>
+              ` : ''}
+            ` : ''}
+            ${prestamo.observaciones ? `
+              <div style="margin-top:12px; padding:8px; background:#f5f5f5; border-radius:6px; font-size:13px;">
+                <strong>📝 Observaciones:</strong> ${prestamo.observaciones}
+              </div>
+            ` : ''}
+          </div>`;
+        }
+        
+        lista.innerHTML = html;
+        
+        // Cargar sanciones
+        cargarSanciones(sanciones);
+      } catch (e) {
+        console.error('Error:', e);
+        lista.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando préstamos</div>';
+      }
+    }
+
+    async function cargarSanciones(sanciones) {
+      const lista = document.getElementById('listaSanciones');
+      if (!sanciones || sanciones.length === 0) {
+        lista.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No tienes sanciones activas.</div>';
+        return;
+      }
+      
+      let html = '';
+      for (const sancion of sanciones) {
+        const activa = sancion.estado === 'activa';
+        html += `<div class="prestamo-card ${activa ? 'vencido' : 'normal'}" style="border-left-color:${activa ? '#f44336' : '#757575'};">
+          <div style="display:flex; justify-content:space-between; align-items:start;">
+            <div>
+              <h4 style="margin:0 0 8px 0;">${sancion.tipo_sancion || 'Sanción'}</h4>
+              <div style="font-size:14px; color:#666;">Causa: ${sancion.causa_sancion || 'N/A'}</div>
+              <div style="font-size:14px; color:#666; margin-top:4px;">Estado: <strong style="color:${activa ? '#f44336' : '#757575'}">${sancion.estado || 'N/A'}</strong></div>
+            </div>
+            <div style="text-align:right; font-size:12px; color:#999;">
+              ${sancion.fecha_inicio ? new Date(sancion.fecha_inicio).toLocaleDateString('es-ES') : ''}
+            </div>
+          </div>
+          ${sancion.fecha_fin ? `
+            <div style="margin-top:12px; padding:8px; background:#fff3cd; border-radius:6px;">
+              <strong>📅 Válida hasta:</strong> ${new Date(sancion.fecha_fin).toLocaleDateString('es-ES')}
+            </div>
+          ` : ''}
+          ${sancion.descripcion ? `
+            <div style="margin-top:8px; padding:8px; background:#f5f5f5; border-radius:6px; font-size:13px;">
+              ${sancion.descripcion}
+            </div>
+          ` : ''}
+        </div>`;
+      }
+      lista.innerHTML = html;
+    }
+
+    // Cargar al inicio
+    if (miId) {
+      cargarMisPrestamos();
+      // Auto-refresh cada 30 segundos
+      setInterval(cargarMisPrestamos, 30000);
+    }
+  </script>
+</body>
+</html>
+

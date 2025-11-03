@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Limpiar Datos Importados</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #d32f2f;
+      margin-bottom: 10px;
+    }
+    .warning {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      color: #856404;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 20px 0;
+    }
+    button {
+      background: #d32f2f;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #b71c1c;
+    }
+    button.secondary {
+      background: #757575;
+    }
+    button.secondary:hover {
+      background: #616161;
+    }
+    #resultado {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+    }
+    .exito {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #f8f9fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0">🗑️ Limpiar Datos Importados</h2>
+      <button onclick="location.href='admin.html'" style="background:#757575; margin:0;">← Volver al Admin</button>
+    </div>
+    
+    <div class="warning">
+      <strong>⚠️ ADVERTENCIA:</strong> Esta acción eliminará todos los elementos (libros y equipos) de la base de datos. Esta acción NO se puede deshacer.
+    </div>
+
+    <div style="margin-top:20px; padding:20px; background:#fff3cd; border:2px solid #ff9800; border-radius:8px;">
+      <h3 style="margin-top:0; color:#d32f2f;">⚡ BORRAR TODOS LOS LIBROS</h3>
+      <p>Haz clic en el botón de abajo para eliminar TODOS los libros/elementos de la base de datos.</p>
+      <button onclick="eliminarTodos()" style="background: #d32f2f; padding: 15px 30px; font-size: 18px; font-weight: bold;">
+        🗑️ BORRAR TODOS LOS LIBROS
+      </button>
+    </div>
+
+    <div style="margin-top:20px;">
+      <button onclick="listarElementos()">Ver Elementos Actuales</button>
+      <button onclick="contarElementos()">Contar Elementos</button>
+    </div>
+
+    <div id="info" style="margin-top: 20px;"></div>
+
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd;">
+      <h3>Opciones Avanzadas:</h3>
+      <button onclick="eliminarPorCategoria()" class="secondary">Eliminar por Categoría</button>
+      <button onclick="editarLibro()" class="secondary" style="background:#2196f3;">Editar Libro</button>
+    </div>
+
+    <div id="editorLibro" style="margin-top:20px; padding:20px; background:#f8f9fa; border-radius:8px; display:none;">
+      <h4>Editar Libro</h4>
+      <input type="text" id="libroIdEditar" placeholder="ID del libro a editar" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid #ddd;">
+      <button onclick="cargarLibroParaEditar()" style="background:#2196f3; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Cargar Libro</button>
+      <div id="formularioEdicion" style="margin-top:15px;"></div>
+    </div>
+
+    <div id="resultado"></div>
+  </div>
+
+  <script>
+    async function contarElementos() {
+      try {
+        const res = await fetch('/api/libros');
+        const elementos = await res.json();
+        const info = document.getElementById('info');
+        info.innerHTML = `<div class="info"><strong>Total de elementos:</strong> ${elementos.length}</div>`;
+      } catch (e) {
+        document.getElementById('info').innerHTML = '<div class="error">Error al contar elementos</div>';
+      }
+    }
+
+    async function listarElementos() {
+      try {
+        const res = await fetch('/api/libros');
+        const elementos = await res.json();
+        const info = document.getElementById('info');
+        
+        if (elementos.length === 0) {
+          info.innerHTML = '<div class="info">No hay elementos en la base de datos.</div>';
+          return;
+        }
+
+        let html = '<div class="info"><strong>Elementos encontrados:</strong> ' + elementos.length + '</div>';
+        html += '<div style="margin:15px 0; display:flex; gap:10px; flex-wrap:wrap;">';
+        html += '<button onclick="seleccionarTodos()" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">✓ Seleccionar Todos</button>';
+        html += '<button onclick="deseleccionarTodos()" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">✗ Deseleccionar Todos</button>';
+        html += '<button onclick="eliminarSeleccionados()" style="background:#d32f2f; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">🗑️ Eliminar Seleccionados (<span id="contadorSeleccionados">0</span>)</button>';
+        html += '</div>';
+        html += '<table><thead><tr><th style="width:30px;"><input type="checkbox" id="checkTodos" onchange="toggleTodos()"></th><th>ID</th><th>Título</th><th>Categoría</th><th>Stock</th><th>Acción</th></tr></thead><tbody>';
+        
+        elementos.forEach(elem => {
+          html += `<tr>
+            <td><input type="checkbox" class="checkLibro" value="${elem.id}" onchange="actualizarContador()"></td>
+            <td style="font-size: 11px; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${elem.id.substring(0, 20)}...</td>
+            <td>${elem.titulo || 'Sin título'}</td>
+            <td>${elem.categoria || 'N/A'}</td>
+            <td>${elem.stock || 0}</td>
+            <td><button onclick="eliminarUno('${elem.id}')" style="background: #f44336; padding: 4px 8px; font-size: 12px;">Eliminar</button></td>
+          </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        info.innerHTML = html;
+        actualizarContador();
+      } catch (e) {
+        document.getElementById('info').innerHTML = '<div class="error">Error al listar elementos</div>';
+      }
+    }
+
+    async function eliminarUno(id) {
+      if (!confirm('¿Estás seguro de eliminar este elemento?')) return;
+      
+      try {
+        const res = await fetch(`/api/libros/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          alert('Elemento eliminado');
+          listarElementos();
+          contarElementos();
+        } else {
+          alert('Error al eliminar');
+        }
+      } catch (e) {
+        alert('Error de conexión');
+      }
+    }
+
+    async function eliminarTodos() {
+      const confirmacion = prompt('⚠️ ESTO ELIMINARÁ TODOS LOS ELEMENTOS.\n\nPara confirmar, escribe: ELIMINAR TODO');
+      
+      if (confirmacion !== 'ELIMINAR TODO') {
+        alert('Operación cancelada');
+        return;
+      }
+
+      const resultado = document.getElementById('resultado');
+      
+      try {
+        // Obtener todos los elementos
+        const res = await fetch('/api/libros');
+        const elementos = await res.json();
+        
+        if (elementos.length === 0) {
+          resultado.innerHTML = '<div class="info">No hay elementos para eliminar.</div>';
+          return;
+        }
+
+        // Crear barra de progreso
+        resultado.innerHTML = `
+          <div style="background:#e3f2fd; padding:20px; border-radius:8px; margin-top:15px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+              <strong>Eliminando todos los elementos...</strong>
+              <span id="porcentaje">0%</span>
+            </div>
+            <div style="background:#ccc; border-radius:10px; height:30px; overflow:hidden; position:relative;">
+              <div id="barraProgreso" style="background:linear-gradient(90deg, #4caf50, #8bc34a); height:100%; width:0%; transition:width 0.3s; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:14px;">
+                0%
+              </div>
+            </div>
+            <div style="margin-top:10px; font-size:14px;">
+              <span id="contadorProgreso">0 / ${elementos.length}</span> elementos eliminados
+            </div>
+          </div>
+        `;
+
+        let eliminados = 0;
+        let errores = 0;
+
+        // Eliminar cada elemento con await para esperar cada respuesta
+        for (let i = 0; i < elementos.length; i++) {
+          const elem = elementos[i];
+          try {
+            const delRes = await fetch(`/api/libros/${elem.id}`, { method: 'DELETE' });
+            if (delRes.ok) {
+              eliminados++;
+            } else {
+              errores++;
+            }
+          } catch (e) {
+            errores++;
+            console.error('Error eliminando', elem.id, e);
+          }
+          
+          // Actualizar progreso
+          const porcentaje = Math.round(((i + 1) / elementos.length) * 100);
+          const barraProgreso = document.getElementById('barraProgreso');
+          const porcentajeText = document.getElementById('porcentaje');
+          const contadorProgreso = document.getElementById('contadorProgreso');
+          
+          if (barraProgreso) {
+            barraProgreso.style.width = porcentaje + '%';
+            barraProgreso.textContent = porcentaje + '%';
+          }
+          if (porcentajeText) porcentajeText.textContent = porcentaje + '%';
+          if (contadorProgreso) contadorProgreso.textContent = `${i + 1} / ${elementos.length} elementos eliminados`;
+          
+          // Pequeña pausa para no saturar el servidor
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        resultado.innerHTML = `<div class="exito">
+          ✓ Eliminación completada<br>
+          <strong>Total:</strong> ${elementos.length}<br>
+          <strong>Eliminados:</strong> ${eliminados}<br>
+          <strong>Errores:</strong> ${errores}
+        </div>`;
+        
+        // Actualizar lista
+        setTimeout(() => {
+          listarElementos();
+          contarElementos();
+        }, 500);
+      } catch (err) {
+        console.error('Error general:', err);
+        resultado.innerHTML = '<div class="error">✗ Error al eliminar elementos. Verifica que la aplicación esté corriendo.</div>';
+      }
+    }
+
+    async function eliminarPorCategoria() {
+      try {
+        // Obtener todas las categorías únicas de los elementos
+        const resLibros = await fetch('/api/libros');
+        const todosLosLibros = await resLibros.json();
+        
+        // Obtener categorías únicas
+        const categoriasUnicas = [...new Set(todosLosLibros.map(l => l.categoria).filter(c => c))];
+        
+        if (categoriasUnicas.length === 0) {
+          alert('No hay elementos con categorías definidas');
+          return;
+        }
+        
+        // Mostrar diálogo para seleccionar categoría
+        const categoriasTexto = categoriasUnicas.map((c, i) => `${i + 1}. ${c}`).join('\n');
+        const seleccion = prompt(`Selecciona la categoría a eliminar:\n\n${categoriasTexto}\n\nIngresa el número o el nombre de la categoría:`);
+        
+        if (!seleccion) return;
+        
+        let categoriaSeleccionada = null;
+        
+        // Verificar si ingresó un número
+        const numero = parseInt(seleccion);
+        if (!isNaN(numero) && numero >= 1 && numero <= categoriasUnicas.length) {
+          categoriaSeleccionada = categoriasUnicas[numero - 1];
+        } else {
+          // Buscar por nombre (parcial)
+          categoriaSeleccionada = categoriasUnicas.find(c => 
+            c.toLowerCase().includes(seleccion.toLowerCase())
+          );
+        }
+        
+        if (!categoriaSeleccionada) {
+          alert('Categoría no encontrada');
+          return;
+        }
+
+        const elementosAEliminar = todosLosLibros.filter(l => 
+          l.categoria && l.categoria.toLowerCase() === categoriaSeleccionada.toLowerCase()
+        );
+
+        if (elementosAEliminar.length === 0) {
+          alert(`No hay elementos en la categoría "${categoriaSeleccionada}"`);
+          return;
+        }
+
+        if (!confirm(`¿Eliminar ${elementosAEliminar.length} elementos de la categoría "${categoriaSeleccionada}"?\n\n⚠️ Esta acción NO se puede deshacer.`)) {
+          return;
+        }
+
+        // Crear barra de progreso
+        const resultado = document.getElementById('resultado');
+        resultado.innerHTML = `
+          <div style="background:#e3f2fd; padding:20px; border-radius:8px; margin-top:15px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+              <strong>Eliminando elementos de "${categoriaSeleccionada}"...</strong>
+              <span id="porcentaje">0%</span>
+            </div>
+            <div style="background:#ccc; border-radius:10px; height:30px; overflow:hidden; position:relative;">
+              <div id="barraProgreso" style="background:linear-gradient(90deg, #4caf50, #8bc34a); height:100%; width:0%; transition:width 0.3s; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:14px;">
+                0%
+              </div>
+            </div>
+            <div style="margin-top:10px; font-size:14px;">
+              <span id="contadorProgreso">0 / ${elementosAEliminar.length}</span> elementos eliminados
+            </div>
+          </div>
+        `;
+
+        let eliminados = 0;
+        let errores = 0;
+
+        for (let i = 0; i < elementosAEliminar.length; i++) {
+          const elem = elementosAEliminar[i];
+          try {
+            const delRes = await fetch(`/api/libros/${elem.id}`, { method: 'DELETE' });
+            if (delRes.ok) {
+              eliminados++;
+            } else {
+              errores++;
+            }
+          } catch (e) {
+            errores++;
+            console.error('Error eliminando', elem.id, e);
+          }
+          
+          // Actualizar progreso
+          const porcentaje = Math.round(((i + 1) / elementosAEliminar.length) * 100);
+          const barraProgreso = document.getElementById('barraProgreso');
+          const porcentajeText = document.getElementById('porcentaje');
+          const contadorProgreso = document.getElementById('contadorProgreso');
+          
+          if (barraProgreso) {
+            barraProgreso.style.width = porcentaje + '%';
+            barraProgreso.textContent = porcentaje + '%';
+          }
+          if (porcentajeText) porcentajeText.textContent = porcentaje + '%';
+          if (contadorProgreso) contadorProgreso.textContent = `${i + 1} / ${elementosAEliminar.length} elementos eliminados`;
+          
+          // Pequeña pausa para no saturar
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        resultado.innerHTML = `<div class="exito">
+          ✓ Eliminación completada<br>
+          <strong>Categoría:</strong> ${categoriaSeleccionada}<br>
+          <strong>Total a eliminar:</strong> ${elementosAEliminar.length}<br>
+          <strong>Eliminados:</strong> ${eliminados}<br>
+          <strong>Errores:</strong> ${errores}
+        </div>`;
+        
+        setTimeout(() => {
+          listarElementos();
+          contarElementos();
+        }, 500);
+      } catch (e) {
+        console.error('Error:', e);
+        document.getElementById('resultado').innerHTML = '<div class="error">Error al eliminar por categoría: ' + e.message + '</div>';
+      }
+    }
+
+    function editarLibro() {
+      const editor = document.getElementById('editorLibro');
+      editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function cargarLibroParaEditar() {
+      const id = document.getElementById('libroIdEditar').value.trim();
+      if (!id) {
+        alert('Por favor ingresa un ID');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/libros/${id}`);
+        if (!res.ok) {
+          alert('Libro no encontrado');
+          return;
+        }
+        const libro = await res.json();
+        const formulario = document.getElementById('formularioEdicion');
+        formulario.innerHTML = `
+          <form id="formEditar" style="display:grid; gap:10px;">
+            <label>Título <input type="text" id="edit_titulo" value="${libro.titulo || ''}"></label>
+            <label>Autor <input type="text" id="edit_autor" value="${libro.autor || ''}"></label>
+            <label>ISBN <input type="text" id="edit_isbn" value="${libro.isbn || ''}"></label>
+            <label>Editorial <input type="text" id="edit_editorial" value="${libro.editorial || ''}"></label>
+            <label>Año <input type="number" id="edit_anio" value="${libro.anio_publicacion || ''}"></label>
+            <label>Categoría <input type="text" id="edit_categoria" value="${libro.categoria || ''}"></label>
+            <label>Subcategoría <input type="text" id="edit_subcategoria" value="${libro.subcategoria || ''}"></label>
+            <label>Stock <input type="number" id="edit_stock" value="${libro.stock || 0}"></label>
+            <label>Disponible <input type="number" id="edit_disponible" value="${libro.cantidad_disponible || 0}"></label>
+            <label>Descripción <textarea id="edit_descripcion" rows="3">${libro.descripcion || ''}</textarea></label>
+            <button type="button" onclick="guardarLibroEditado('${id}')" style="background:#4caf50; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer;">Guardar Cambios</button>
+          </form>
+        `;
+      } catch (e) {
+        alert('Error al cargar el libro');
+      }
+    }
+
+    async function guardarLibroEditado(id) {
+      const datos = {
+        titulo: document.getElementById('edit_titulo').value,
+        autor: document.getElementById('edit_autor').value,
+        isbn: document.getElementById('edit_isbn').value,
+        editorial: document.getElementById('edit_editorial').value,
+        anio_publicacion: parseInt(document.getElementById('edit_anio').value) || 0,
+        categoria: document.getElementById('edit_categoria').value,
+        subcategoria: document.getElementById('edit_subcategoria').value,
+        stock: parseInt(document.getElementById('edit_stock').value) || 0,
+        cantidad_disponible: parseInt(document.getElementById('edit_disponible').value) || 0,
+        descripcion: document.getElementById('edit_descripcion').value
+      };
+      
+      try {
+        const res = await fetch(`/api/libros/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datos)
+        });
+        if (res.ok) {
+          alert('✓ Libro actualizado correctamente');
+          document.getElementById('formularioEdicion').innerHTML = '';
+          document.getElementById('libroIdEditar').value = '';
+        } else {
+          alert('Error al actualizar');
+        }
+      } catch (e) {
+        alert('Error de conexión');
+      }
+    }
+
+    function actualizarContador() {
+      const seleccionados = document.querySelectorAll('.checkLibro:checked').length;
+      const contador = document.getElementById('contadorSeleccionados');
+      if (contador) contador.textContent = seleccionados;
+    }
+
+    function seleccionarTodos() {
+      document.querySelectorAll('.checkLibro').forEach(c => c.checked = true);
+      const checkTodos = document.getElementById('checkTodos');
+      if (checkTodos) checkTodos.checked = true;
+      actualizarContador();
+    }
+
+    function deseleccionarTodos() {
+      document.querySelectorAll('.checkLibro').forEach(c => c.checked = false);
+      const checkTodos = document.getElementById('checkTodos');
+      if (checkTodos) checkTodos.checked = false;
+      actualizarContador();
+    }
+
+    function toggleTodos() {
+      const checkTodos = document.getElementById('checkTodos');
+      if (checkTodos) {
+        document.querySelectorAll('.checkLibro').forEach(c => c.checked = checkTodos.checked);
+        actualizarContador();
+      }
+    }
+
+    async function eliminarSeleccionados() {
+      const seleccionados = Array.from(document.querySelectorAll('.checkLibro:checked')).map(c => c.value);
+      if (seleccionados.length === 0) {
+        alert('Por favor selecciona al menos un elemento');
+        return;
+      }
+      
+      if (!confirm(`¿Estás seguro de eliminar ${seleccionados.length} elemento(s)?`)) {
+        return;
+      }
+
+      const resultado = document.getElementById('resultado');
+      resultado.innerHTML = `<div class="info">⏳ Eliminando ${seleccionados.length} elementos...</div>`;
+
+      let eliminados = 0;
+      let errores = 0;
+
+      // Crear barra de progreso
+      resultado.innerHTML = `
+        <div style="background:#e3f2fd; padding:20px; border-radius:8px; margin-top:15px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <strong>Eliminando elementos seleccionados...</strong>
+            <span id="porcentaje">0%</span>
+          </div>
+          <div style="background:#ccc; border-radius:10px; height:30px; overflow:hidden; position:relative;">
+            <div id="barraProgreso" style="background:linear-gradient(90deg, #4caf50, #8bc34a); height:100%; width:0%; transition:width 0.3s; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:14px;">
+              0%
+            </div>
+          </div>
+          <div style="margin-top:10px; font-size:14px;">
+            <span id="contadorProgreso">0 / ${seleccionados.length}</span> elementos eliminados
+          </div>
+        </div>
+      `;
+
+      for (let i = 0; i < seleccionados.length; i++) {
+        const id = seleccionados[i];
+        try {
+          const res = await fetch(`/api/libros/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            eliminados++;
+          } else {
+            errores++;
+          }
+        } catch (e) {
+          errores++;
+          console.error('Error eliminando', id, e);
+        }
+        
+        // Actualizar progreso
+        const porcentaje = Math.round(((i + 1) / seleccionados.length) * 100);
+        const barraProgreso = document.getElementById('barraProgreso');
+        const porcentajeText = document.getElementById('porcentaje');
+        const contadorProgreso = document.getElementById('contadorProgreso');
+        
+        if (barraProgreso) {
+          barraProgreso.style.width = porcentaje + '%';
+          barraProgreso.textContent = porcentaje + '%';
+        }
+        if (porcentajeText) porcentajeText.textContent = porcentaje + '%';
+        if (contadorProgreso) contadorProgreso.textContent = `${i + 1} / ${seleccionados.length} elementos eliminados`;
+        
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      resultado.innerHTML = `<div class="exito">
+        ✓ Eliminación completada<br>
+        <strong>Eliminados:</strong> ${eliminados}<br>
+        <strong>Errores:</strong> ${errores}
+      </div>`;
+
+      setTimeout(() => {
+        listarElementos();
+        contarElementos();
+      }, 500);
+    }
+
+    // Cargar información al inicio
+    contarElementos();
+  </script>
+</body>
+</html>
+

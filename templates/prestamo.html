@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitar Préstamo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/prestamo.css') }}">
+</head>
+<body>
+  <div style="margin:20px;">
+    <button onclick="location.href='principal.html'" style="background:#757575; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; margin-bottom:15px;">← Volver al Inicio</button>
+  </div>
+  <div class="container">
+    <h2>Solicitar Préstamo</h2>
+    <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #ffc107;">
+      <strong>💡 Ayuda:</strong> 
+      <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+        <li>Para encontrar el ID de un libro, ve a la página principal y haz clic en un libro. El ID aparecerá en la URL (ej: detalle_libro.html?id=ABC123)</li>
+        <li>Si eres un usuario registrado, puedes usar tu documento como ID de usuario</li>
+        <li>Los préstamos de libros no requieren documento, pero los equipos sí</li>
+      </ul>
+    </div>
+    
+    <form id="prestamoForm">
+      <div class="form-group">
+        <label for="id_elemento">ID del Elemento (Libro o Equipo): *</label>
+        <input type="text" id="id_elemento" name="id_elemento" placeholder="Pega el ID del elemento aquí" required>
+        <small style="color: #666; font-size: 12px;">Ejemplo: abc123-def456-ghi789</small>
+      </div>
+
+      <div class="form-group">
+        <label for="id_usuario">Documento de Usuario (solo para equipos):</label>
+        <input type="text" id="id_usuario" name="id_usuario" placeholder="Opcional para libros, requerido para equipos">
+        <small style="color: #666; font-size: 12px;">Deja vacío si es un libro</small>
+      </div>
+
+      <div class="form-group">
+        <label for="fecha_prestamo">Fecha de Préstamo:</label>
+        <input type="date" id="fecha_prestamo" name="fecha_prestamo" required>
+      </div>
+
+      <div class="form-group">
+        <label for="fecha_devolucion">Fecha de Devolución Esperada:</label>
+        <input type="date" id="fecha_devolucion" name="fecha_devolucion" required>
+      </div>
+
+      <div class="form-group">
+        <label for="observaciones">Observaciones:</label>
+        <textarea id="observaciones" name="observaciones" rows="3" placeholder="Cualquier información adicional..."></textarea>
+      </div>
+
+      <button type="submit">Solicitar Préstamo</button>
+    </form>
+
+    <div id="resultado" style="margin-top: 16px;"></div>
+  </div>
+
+  <script>
+    // Establecer fecha de hoy como predeterminada
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha_prestamo').value = today;
+    
+    // Establecer fecha de devolución en 30 días
+    const devolucionDate = new Date();
+    devolucionDate.setDate(devolucionDate.getDate() + 30);
+    document.getElementById('fecha_devolucion').value = devolucionDate.toISOString().split('T')[0];
+
+    // Obtener ID del elemento de la URL si viene desde detalle_libro.html
+    const urlParams = new URLSearchParams(window.location.search);
+    const elementoId = urlParams.get('elemento');
+    if (elementoId) {
+      document.getElementById('id_elemento').value = elementoId;
+    }
+
+    document.getElementById('prestamoForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const resultadoDiv = document.getElementById('resultado');
+      resultadoDiv.innerHTML = 'Enviando solicitud...';
+      
+      const formData = new FormData(e.target);
+      const data = {
+        id_elemento: formData.get('id_elemento'),
+        id_usuario: formData.get('id_usuario') || null,
+        fecha_prestamo: formData.get('fecha_prestamo'),
+        fecha_devolucion: formData.get('fecha_devolucion'),
+        observaciones: formData.get('observaciones') || ''
+      };
+
+      try {
+        const res = await fetch('/prestamos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const respuesta = await res.json().catch(() => ({}));
+        
+        if (res.ok && respuesta.ok) {
+          resultadoDiv.innerHTML = '<div style="background: #d4edda; color: #155724; padding: 12px; border-radius: 8px; border: 1px solid #c3e6cb;">✓ Solicitud de préstamo enviada correctamente. Queda pendiente de aprobación por el administrador.</div>';
+          e.target.reset();
+          // Restablecer fechas
+          document.getElementById('fecha_prestamo').value = today;
+          const devolucion = new Date();
+          devolucion.setDate(devolucion.getDate() + 30);
+          document.getElementById('fecha_devolucion').value = devolucion.toISOString().split('T')[0];
+          // Limpiar ID del elemento si venía desde URL
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('elemento')) {
+            document.getElementById('id_elemento').value = '';
+          }
+        } else if (res.status === 202) {
+          // Elemento no disponible - agregado a lista de espera
+          resultadoDiv.innerHTML = `<div style="background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border: 1px solid #ffc107;">⚠️ ${respuesta.error || 'Elemento no disponible'}. Has sido agregado a la lista de espera.</div>`;
+        } else {
+          const errorMsg = respuesta.error || 'No se pudo procesar la solicitud';
+          resultadoDiv.innerHTML = `<div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; border: 1px solid #f5c6cb;">✗ Error: ${errorMsg}</div>`;
+          console.error('Error en préstamo:', respuesta);
+        }
+      } catch (err) {
+        resultadoDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; border: 1px solid #f5c6cb;">✗ Error de conexión. Por favor, verifica tu conexión e intenta de nuevo.</div>';
+      }
+    });
+  </script>
+</body>
+</html>

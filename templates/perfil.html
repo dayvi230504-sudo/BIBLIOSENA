@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil - Biblioteca SENA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+  <style>
+    .perfil-container {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 30px;
+    }
+    .perfil-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    .perfil-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .perfil-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: white;
+      font-size: 40px;
+      font-weight: bold;
+    }
+    .perfil-info {
+      display: grid;
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #667eea;
+    }
+    .info-value {
+      color: #2c3e50;
+    }
+    .btn-volver {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+    .btn-volver:hover {
+      background: #5568d3;
+    }
+  </style>
+</head>
+<body>
+  <header class="encabezado">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+    <h2 style="margin-left:16px; flex:1;">👤 Mi Perfil</h2>
+    <a href="principal.html" class="btn-volver">← Volver</a>
+  </header>
+
+  <main class="content">
+    <div class="perfil-container">
+      <div class="perfil-card">
+        <div class="perfil-header">
+          <div class="perfil-avatar" id="avatarInitial">👤</div>
+          <h1 id="nombreCompleto">Cargando...</h1>
+          <p id="rolUsuario" style="color:#666; margin-top:8px;">-</p>
+        </div>
+        
+        <div class="perfil-info" id="infoPerfil">
+          <div class="info-item">
+            <span class="info-label">📋 Documento:</span>
+            <span class="info-value" id="documento">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📧 Correo:</span>
+            <span class="info-value" id="correo">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">👤 Username:</span>
+            <span class="info-value" id="username">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">🆔 ID de Usuario:</span>
+            <span class="info-value" id="userId">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📅 Fecha de Registro:</span>
+            <span class="info-value" id="fechaRegistro">-</span>
+          </div>
+        </div>
+        
+        <div style="margin-top:30px; padding-top:20px; border-top:2px solid #e0e0e0;">
+          <a href="principal.html" class="btn-volver">← Volver al Inicio</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function cargarPerfil() {
+      const token = localStorage.getItem('token');
+      let userId = null;
+      
+      if (token && token.startsWith('user-')) {
+        userId = token.replace('user-', '');
+      } else if (token === 'admin-token') {
+        // Cargar perfil admin
+        document.getElementById('nombreCompleto').textContent = 'Administrador';
+        document.getElementById('rolUsuario').textContent = '👑 Administrador';
+        document.getElementById('documento').textContent = '00000000';
+        document.getElementById('correo').textContent = 'admin@bibliosena.com';
+        document.getElementById('username').textContent = 'admin';
+        document.getElementById('userId').textContent = 'admin-token';
+        document.getElementById('fechaRegistro').textContent = '-';
+        document.getElementById('avatarInitial').textContent = '👑';
+        return;
+      } else {
+        alert('Necesitas iniciar sesión para ver tu perfil');
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/usuarios/${userId}`);
+        if (!res.ok) {
+          throw new Error('Usuario no encontrado');
+        }
+        const usuario = await res.json();
+        
+        // Actualizar información
+        document.getElementById('nombreCompleto').textContent = usuario.nombre || 'Usuario';
+        document.getElementById('rolUsuario').textContent = usuario.role === 'admin' ? '👑 Administrador' : '👤 Usuario';
+        document.getElementById('documento').textContent = usuario.documento || '-';
+        document.getElementById('correo').textContent = usuario.correo || 'No registrado';
+        document.getElementById('username').textContent = usuario.username || '-';
+        document.getElementById('userId').textContent = usuario.id || userId;
+        
+        // Fecha de registro
+        if (usuario.creado_en) {
+          const fecha = new Date(usuario.creado_en);
+          document.getElementById('fechaRegistro').textContent = fecha.toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+        } else {
+          document.getElementById('fechaRegistro').textContent = '-';
+        }
+        
+        // Avatar con inicial
+        const inicial = usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : '👤';
+        document.getElementById('avatarInitial').textContent = inicial;
+        
+      } catch (e) {
+        console.error('Error cargando perfil:', e);
+        alert('Error al cargar el perfil. Intenta recargar la página.');
+      }
+    }
+    
+    cargarPerfil();
+  </script>
+</body>
+</html>
+

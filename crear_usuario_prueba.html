@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Crear Usuario de Prueba</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    #resultado {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+    }
+    .exito {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🔧 Crear Usuario de Prueba</h2>
+    <p>Haz clic en el botón para crear un usuario de prueba que puedas usar para iniciar sesión:</p>
+    
+    <button onclick="crearUsuario()">Crear Usuario: juan / 123456</button>
+    <button onclick="crearOtroUsuario()">Crear Usuario: maria / 123456</button>
+    
+    <div id="resultado"></div>
+    
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+      <h3>📋 Credenciales que se crearán:</h3>
+      <ul>
+        <li><strong>Usuario 1:</strong> juan / 123456</li>
+        <li><strong>Usuario 2:</strong> maria / 123456</li>
+      </ul>
+      <p style="margin-top: 20px;">
+        <strong>Después de crear el usuario:</strong><br>
+        1. Ve a <a href="login.html">login.html</a><br>
+        2. Inicia sesión con las credenciales creadas
+      </p>
+    </div>
+  </div>
+
+  <script>
+    async function crearUsuario() {
+      const resultado = document.getElementById('resultado');
+      resultado.innerHTML = 'Creando usuario...';
+      
+      try {
+        const res = await fetch('/api/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: 'Juan Pérez',
+            documento: '1234567890',
+            tipo_documento: '01',
+            numero_ficha: '123456',
+            direccion: 'Calle 123',
+            telefono: '3001234567',
+            correo: 'juan@ejemplo.com',
+            tipo_usuario: '02', // Aprendiz
+            username: 'juan',
+            password: '123456',
+            role: 'user'
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data.ok) {
+          resultado.innerHTML = '<div class="exito">✓ Usuario "juan" creado correctamente!<br>Puedes iniciar sesión con:<br><strong>Usuario:</strong> juan<br><strong>Contraseña:</strong> 123456</div>';
+        } else {
+          resultado.innerHTML = `<div class="error">✗ Error: ${data.error || 'No se pudo crear el usuario'}</div>`;
+        }
+      } catch (err) {
+        resultado.innerHTML = '<div class="error">✗ Error de conexión. Verifica que la aplicación esté corriendo.</div>';
+      }
+    }
+
+    async function crearOtroUsuario() {
+      const resultado = document.getElementById('resultado');
+      resultado.innerHTML = 'Creando usuario...';
+      
+      try {
+        const res = await fetch('/api/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: 'María García',
+            documento: '9876543210',
+            tipo_documento: '01',
+            numero_ficha: '654321',
+            direccion: 'Calle 456',
+            telefono: '3009876543',
+            correo: 'maria@ejemplo.com',
+            tipo_usuario: '02', // Aprendiz
+            username: 'maria',
+            password: '123456',
+            role: 'user'
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data.ok) {
+          resultado.innerHTML = '<div class="exito">✓ Usuario "maria" creado correctamente!<br>Puedes iniciar sesión con:<br><strong>Usuario:</strong> maria<br><strong>Contraseña:</strong> 123456</div>';
+        } else {
+          resultado.innerHTML = `<div class="error">✗ Error: ${data.error || 'No se pudo crear el usuario'}</div>`;
+        }
+      } catch (err) {
+        resultado.innerHTML = '<div class="error">✗ Error de conexión. Verifica que la aplicación esté corriendo.</div>';
+      }
+    }
+  </script>
+</body>
+</html>
+
+
+
