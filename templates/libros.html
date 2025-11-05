@@ -13,9 +13,20 @@
       <input type="text" id="buscadorInput" placeholder="Buscar libros...">
       <button id="btnBuscarLibros"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/></svg></button>
     </div>
-    <div class="usuario">
+    <div class="usuario" id="usuarioContainer" style="position: relative; cursor: pointer;">
       <span id="nombreUsuario">Usuario</span>
       <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
+      <div class="usuario-menu" id="usuarioMenu" style="display: none; position: fixed; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 180px; z-index: 999999; overflow: hidden;">
+        <a href="#" id="linkFavoritos" style="display: block; padding: 12px 20px; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #eee; transition: background 0.2s;">
+          ❤️ Mis Favoritos
+        </a>
+        <a href="#" id="linkPerfil" style="display: block; padding: 12px 20px; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #eee; transition: background 0.2s;">
+          👤 Ver Perfil
+        </a>
+        <a href="#" id="linkCerrarSesion" style="display: block; padding: 12px 20px; color: #e74c3c; text-decoration: none; transition: background 0.2s;">
+          🚪 Cerrar Sesión
+        </a>
+      </div>
     </div>
   </header>
   <nav class="menu">
@@ -154,6 +165,122 @@
     
     cargarCarrusel();
     
+    // Cargar nombre de usuario
+    async function cargarNombreUsuario() {
+      const token = localStorage.getItem('token');
+      const nombreEl = document.getElementById('nombreUsuario');
+      if (!nombreEl) return;
+      
+      // Intentar desde localStorage
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.name || user.nombre) {
+            nombreEl.textContent = user.name || user.nombre;
+            return;
+          }
+        } catch (e) {}
+      }
+      
+      // Si hay token, intentar obtener desde API
+      if (token && token.startsWith('user-')) {
+        const userId = token.replace('user-', '');
+        try {
+          const res = await fetch(`/api/usuarios/${userId}`);
+          if (res.ok) {
+            const user = await res.json();
+            if (user.nombre) {
+              nombreEl.textContent = user.nombre;
+              // Guardar en localStorage
+              localStorage.setItem('userData', JSON.stringify({ name: user.nombre, id: user.id }));
+            }
+          }
+        } catch (e) {
+          console.error('Error cargando usuario:', e);
+        }
+      } else if (token === 'admin-token') {
+        nombreEl.textContent = 'Administrador';
+      }
+    }
+    
+    // Configurar menú de usuario
+    function configurarMenuUsuario() {
+      const container = document.getElementById('usuarioContainer');
+      const menu = document.getElementById('usuarioMenu');
+      const linkPerfil = document.getElementById('linkPerfil');
+      const linkCerrar = document.getElementById('linkCerrarSesion');
+      
+      if (!container || !menu) return;
+      
+      // Toggle menú al hacer clic
+      container.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = menu.style.display === 'block';
+        if (isOpen) {
+          menu.style.display = 'none';
+        } else {
+          // Calcular posición del menú
+          const rect = container.getBoundingClientRect();
+          menu.style.display = 'block';
+          menu.style.position = 'fixed';
+          menu.style.top = (rect.bottom + window.scrollY + 10) + 'px';
+          menu.style.right = (window.innerWidth - rect.right) + 'px';
+          menu.style.zIndex = '999999';
+        }
+      });
+      
+      // Cerrar menú al hacer clic fuera
+      document.addEventListener('click', (e) => {
+        if (!container.contains(e.target) && !menu.contains(e.target)) {
+          menu.style.display = 'none';
+        }
+      });
+      
+      // Evitar que el clic en el menú lo cierre
+      menu.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+      
+      // Acción cerrar sesión
+      if (linkCerrar) {
+        linkCerrar.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userData');
+            localStorage.removeItem('miId');
+            // Cerrar menú primero
+            menu.style.display = 'none';
+            // Luego redirigir sin sobreposición
+            setTimeout(() => {
+              window.location.replace('login.html');
+            }, 100);
+          }
+        });
+      }
+      
+      // Acción perfil
+      if (linkPerfil) {
+        linkPerfil.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = 'perfil.html';
+        });
+      }
+      
+      // Acción favoritos
+      const linkFavoritos = document.getElementById('linkFavoritos');
+      if (linkFavoritos) {
+        linkFavoritos.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = 'favoritos.html';
+        });
+      }
+    }
+    
     // Mostrar links según autenticación
     (function(){
       const t = localStorage.getItem('token');
@@ -166,6 +293,10 @@
         const linkMisPrestamos = document.getElementById('linkMisPrestamos');
         if (linkMisPrestamos) linkMisPrestamos.style.display = 'inline-block';
       }
+      
+      // Cargar nombre de usuario y configurar menú
+      cargarNombreUsuario();
+      configurarMenuUsuario();
     })();
   </script>
 </body>

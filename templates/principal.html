@@ -10,8 +10,8 @@
 #toast-container {
   position: fixed;
   right: 20px;
-  bottom: 20px;
-  z-index: 2147483647;
+  bottom: 100px;
+  z-index: 2147483646;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -186,18 +186,166 @@
 <!-- Contenedor de toasts -->
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-<div id="botBubble" style="position: fixed; bottom: 20px; right: 20px; width: 300px; height: 400px; background: #f0f7ff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: none;">
-  <div style="padding: 10px; font-size: 14px; font-weight: bold; background: #667eea; color: white; border-radius: 12px 12px 0 0;">Asistente Inteligente</div>
-  <div id="botContent" style="padding: 10px; overflow-y: auto; height: calc(100% - 40px);">
+<div id="botBubble" style="position: fixed; bottom: 80px; right: 20px; width: 350px; height: 500px; background: white; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); display: none; z-index: 2147483647; flex-direction: column; overflow: hidden;">
+  <div style="padding: 16px; font-size: 16px; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+    <span>🤖 Asistente Inteligente</span>
+    <button id="cerrarBot" style="background: transparent; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">&times;</button>
+  </div>
+  <div id="botContent" style="padding: 16px; overflow-y: auto; flex: 1; background: #f9fafb;">
     <!-- Aquí se mostrarán los mensajes del bot -->
   </div>
+  <form id="formBot" style="padding: 12px; border-top: 1px solid #e5e7eb; background: white; display: flex; gap: 8px;">
+    <input type="text" id="inputBot" placeholder="Escribe tu pregunta..." style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 20px; font-size: 14px; outline: none;" autocomplete="off">
+    <button type="submit" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">➤</button>
+  </form>
 </div>
-<button id="toggleBot" style="position: fixed; bottom: 20px; right: 20px; background: #667eea; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">🤖</button>
+<button id="toggleBot" style="position: fixed; bottom: 20px; right: 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 50%; width: 60px; height: 60px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 2147483646; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;">🤖</button>
 <script>
-  document.getElementById('toggleBot').addEventListener('click', () => {
-    const botBubble = document.getElementById('botBubble');
-    botBubble.style.display = botBubble.style.display === 'none' ? 'block' : 'none';
-  });
+  // Función para agregar mensaje al chat
+  function agregarMensajeBot(autor, mensaje, esIA = false) {
+    const chat = document.getElementById('botContent');
+    if (!chat) return;
+    
+    const hora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const div = document.createElement('div');
+    div.style.cssText = `margin-bottom: 12px; display: flex; ${esIA ? 'justify-content: flex-start;' : 'justify-content: flex-end;'}`;
+    
+    const mensajeDiv = document.createElement('div');
+    mensajeDiv.style.cssText = `max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; ${
+      esIA 
+        ? 'background: #e3f2fd; color: #1976d2; border-bottom-left-radius: 4px;' 
+        : 'background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-bottom-right-radius: 4px;'
+    }`;
+    
+    mensajeDiv.innerHTML = `
+      <div style="font-weight: 600; margin-bottom: 4px; font-size: 12px; opacity: 0.8;">
+        ${esIA ? '🤖 Asistente' : '👤 Tú'} - ${hora}
+      </div>
+      <div>${mensaje}</div>
+    `;
+    
+    div.appendChild(mensajeDiv);
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // Función para procesar consultas del bot
+  async function procesarConsultaBot(consulta) {
+    const texto = consulta.toLowerCase().trim();
+    
+    // Ayuda
+    if (texto.includes('ayuda') || texto === '?' || texto === 'help') {
+      return `¡Hola! Soy tu asistente de biblioteca. Puedo ayudarte con:<br><br>
+        • <strong>Buscar libros</strong>: Escribe el título, autor o categoría<br>
+        • <strong>Préstamos</strong>: Pregunta sobre tus préstamos<br>
+        • <strong>Disponibilidad</strong>: Consulta qué hay disponible<br>
+        • <strong>Información</strong>: Pregúntame sobre la biblioteca<br><br>
+        Solo escribe tu pregunta de forma natural y te ayudaré.`;
+    }
+    
+    // Búsqueda de libros
+    if (texto.includes('buscar') || texto.includes('libro') || texto.includes('encontrar') || texto.length > 3) {
+      const resultados = await buscarLibrosIA(consulta);
+      if (resultados.length === 0) {
+        return `No encontré libros que coincidan con "${consulta}". Intenta con otras palabras clave o escribe "ayuda" para más información.`;
+      }
+      let respuesta = `Encontré <strong>${resultados.length}</strong> resultado(s):<br><br>`;
+      resultados.slice(0, 5).forEach(libro => {
+        const disponible = (libro.cantidad_disponible || 0) > 0;
+        respuesta += `📚 <strong>${libro.titulo || 'Sin título'}</strong><br>`;
+        if (libro.autor) respuesta += `   Autor: ${libro.autor}<br>`;
+        respuesta += `   ${disponible ? '✅ Disponible' : '❌ No disponible'}<br><br>`;
+      });
+      if (resultados.length > 5) {
+        respuesta += `... y ${resultados.length - 5} más. Busca en el catálogo para ver todos.`;
+      }
+      return respuesta;
+    }
+    
+    // Préstamos
+    if (texto.includes('préstamo') || texto.includes('prestamo') || texto.includes('tengo prestado')) {
+      const token = localStorage.getItem('token');
+      if (!token || !token.startsWith('user-')) {
+        return 'Para consultar tus préstamos, primero debes iniciar sesión.';
+      }
+      try {
+        const userId = token.replace('user-', '');
+        const res = await fetch(`/api/prestamos?usuario_id=${userId}`);
+        if (res.ok) {
+          const prestamos = await res.json();
+          if (prestamos.length === 0) {
+            return 'No tienes préstamos registrados en este momento.';
+          }
+          const activos = prestamos.filter(p => p.estado === 'aprobado');
+          let respuesta = `Tienes <strong>${prestamos.length}</strong> préstamo(s) en total:<br><br>`;
+          if (activos.length > 0) {
+            respuesta += `<strong>Préstamos activos (${activos.length}):</strong><br>`;
+            activos.slice(0, 3).forEach(p => {
+              respuesta += `📖 ${p.titulo || 'Elemento'} - Devolución: ${p.fecha_devolucion || 'No definida'}<br>`;
+            });
+          }
+          return respuesta;
+        }
+      } catch (e) {
+        return 'Error al obtener tus préstamos. Intenta más tarde.';
+      }
+    }
+    
+    // Respuesta por defecto
+    return `Entiendo que buscas información sobre "${consulta}". Puedo ayudarte a buscar libros, consultar préstamos o responder dudas sobre la biblioteca. Escribe "ayuda" para ver todas las opciones disponibles.`;
+  }
+
+  // Configurar bot flotante
+  const toggleBot = document.getElementById('toggleBot');
+  const botBubble = document.getElementById('botBubble');
+  const cerrarBot = document.getElementById('cerrarBot');
+  const formBot = document.getElementById('formBot');
+  const inputBot = document.getElementById('inputBot');
+
+  if (toggleBot && botBubble) {
+    toggleBot.addEventListener('click', () => {
+      const isVisible = botBubble.style.display !== 'none';
+      if (isVisible) {
+        botBubble.style.display = 'none';
+        toggleBot.style.transform = 'scale(1)';
+      } else {
+        botBubble.style.display = 'flex';
+        toggleBot.style.transform = 'scale(0.9)';
+        // Mostrar mensaje de bienvenida si está vacío
+        if (botBubble.querySelector('#botContent').children.length === 0) {
+          agregarMensajeBot('ia', '¡Hola! Soy tu asistente de biblioteca. Puedes preguntarme sobre libros, préstamos o escribir "ayuda" para ver todos los comandos disponibles. 😊', true);
+        }
+        // Enfocar el input
+        setTimeout(() => inputBot?.focus(), 100);
+      }
+    });
+  }
+
+  if (cerrarBot && botBubble && toggleBot) {
+    cerrarBot.addEventListener('click', () => {
+      botBubble.style.display = 'none';
+      toggleBot.style.transform = 'scale(1)';
+    });
+  }
+
+  if (formBot && inputBot) {
+    formBot.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const consulta = inputBot.value.trim();
+      if (!consulta) return;
+      
+      // Mostrar pregunta del usuario
+      agregarMensajeBot('usuario', consulta, false);
+      inputBot.value = '';
+      
+      // Procesar consulta y mostrar respuesta
+      const respuesta = await procesarConsultaBot(consulta);
+      agregarMensajeBot('ia', respuesta, true);
+      
+      // Enfocar el input de nuevo
+      setTimeout(() => inputBot.focus(), 100);
+    });
+  }
 </script>
 
 <script>
