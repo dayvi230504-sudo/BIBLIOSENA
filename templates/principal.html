@@ -115,15 +115,19 @@
         <div class="hero-stats">
           <div class="stat-card">
             <div class="stat-number" id="totalLibros">-</div>
-            <div class="stat-label">📖 Libros Disponibles</div>
+            <div class="stat-label">📖 Libros Totales</div>
           </div>
           <div class="stat-card">
             <div class="stat-number" id="totalEquipos">-</div>
-            <div class="stat-label">💻 Equipos Disponibles</div>
+            <div class="stat-label">💻 PC Totales</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number" id="totalDisponibles">-</div>
-            <div class="stat-label">✅ Elementos Activos</div>
+            <div class="stat-number" id="librosActivos">-</div>
+            <div class="stat-label">✅ Libros Disponibles</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="equiposActivos">-</div>
+            <div class="stat-label">✅ PC Disponibles</div>
           </div>
         </div>
         <div class="hero-actions">
@@ -396,18 +400,64 @@
   async function cargarEstadisticas() {
     try {
       const res = await fetch('/api/libros');
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error('Error al obtener elementos:', res.status);
+        return;
+      }
       const elementos = await res.json();
-      const libros = elementos.filter(e => (e.categoria || '').toLowerCase() === 'libros');
+      
+      if (!elementos || elementos.length === 0) {
+        console.log('No hay elementos en la respuesta');
+        return;
+      }
+      
+      // Separar libros y equipos
+      const libros = elementos.filter(e => {
+        const cat = (e.categoria || '').toLowerCase();
+        return cat === 'libros' || (!cat.includes('equipo') && !cat.includes('pc') && !cat.includes('portátil') && !cat.includes('desktop') && !cat.includes('tablet') && !cat.includes('proyector') && !cat.includes('informático'));
+      });
+      
       const equipos = elementos.filter(e => {
         const cat = (e.categoria || '').toLowerCase();
-        return cat.includes('equipo') || cat.includes('pc') || cat.includes('portátil');
+        return cat.includes('equipo') || cat.includes('informático') || cat.includes('pc') || cat.includes('portátil') || cat.includes('desktop') || cat.includes('tablet') || cat.includes('proyector');
       });
-      const disponibles = elementos.filter(e => (e.cantidad_disponible || 0) > 0);
       
-      document.getElementById('totalLibros').textContent = libros.length;
-      document.getElementById('totalEquipos').textContent = equipos.length;
-      document.getElementById('totalDisponibles').textContent = disponibles.length;
+      // Calcular totales: sumar stock de todos los elementos
+      let totalLibros = 0;
+      let totalEquipos = 0;
+      let librosActivos = 0; // Disponibles = stock - prestados
+      let equiposActivos = 0;
+      
+      // Sumar totales y activos de libros
+      libros.forEach(libro => {
+        const stock = parseInt(libro.stock || 0);
+        const disponibles = parseInt(libro.cantidad_disponible || 0);
+        totalLibros += stock;
+        librosActivos += disponibles;
+      });
+      
+      // Sumar totales y activos de equipos
+      equipos.forEach(equipo => {
+        const stock = parseInt(equipo.stock || 0);
+        const disponibles = parseInt(equipo.cantidad_disponible || 0);
+        totalEquipos += stock;
+        equiposActivos += disponibles;
+      });
+      
+      // Mostrar estadísticas
+      document.getElementById('totalLibros').textContent = totalLibros;
+      document.getElementById('totalEquipos').textContent = totalEquipos;
+      document.getElementById('librosActivos').textContent = librosActivos;
+      document.getElementById('equiposActivos').textContent = equiposActivos;
+      
+      console.log('Estadísticas cargadas:', {
+        totalLibros,
+        totalEquipos,
+        librosActivos,
+        equiposActivos,
+        librosCount: libros.length,
+        equiposCount: equipos.length
+      });
     } catch (e) {
       console.error('Error cargando estadísticas:', e);
     }

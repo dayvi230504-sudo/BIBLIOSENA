@@ -134,7 +134,7 @@
       </select>
       
       <label for="descripcion">Descripción</label>
-      <textarea name="descripcion" id="descripcion" rows="4" required placeholder="Descripción detallada del elemento"></textarea>
+      <textarea name="descripcion" id="descripcion" rows="4" placeholder="Descripción detallada del elemento (opcional para equipos)"></textarea>
       
       <div class="row">
         <div>
@@ -201,6 +201,7 @@
         document.getElementById('camposLibro').style.display = 'block';
         document.getElementById('autor').setAttribute('required', 'required');
         document.getElementById('editorial').setAttribute('required', 'required');
+        document.getElementById('descripcion').setAttribute('required', 'required');
         document.getElementById('categoria').value = 'Libros';
         
         // Quitar required de campos de PC
@@ -216,6 +217,7 @@
         document.getElementById('autor').removeAttribute('required');
         document.getElementById('editorial').removeAttribute('required');
         document.getElementById('isbn').removeAttribute('required');
+        document.getElementById('descripcion').removeAttribute('required');
       }
       
       // Actualizar tipo en el formulario
@@ -241,6 +243,13 @@
       
       const formData = new FormData(e.target);
       
+      // Debug: mostrar datos que se van a enviar
+      console.log('=== DATOS A ENVIAR ===');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+      console.log('======================');
+      
       try {
         const res = await fetch('/api/libros', {
           method: 'POST',
@@ -250,10 +259,14 @@
         let data;
         try {
           const text = await res.text();
+          console.log('Respuesta del servidor (texto):', text);
           data = text ? JSON.parse(text) : {};
         } catch (e) {
+          console.error('Error al parsear respuesta:', e);
           data = { error: 'Error al procesar respuesta del servidor' };
         }
+        
+        console.log('Respuesta del servidor (JSON):', data);
         
         if (res.ok && (data.ok !== false)) {
           alert('✓ Elemento registrado correctamente');
@@ -265,6 +278,8 @@
           const errorMsg = data.error || `Error ${res.status}: ${res.statusText}` || 'Error desconocido';
           alert('✗ Error al registrar: ' + errorMsg);
           console.error('Error completo:', data);
+          console.error('Status:', res.status);
+          console.error('StatusText:', res.statusText);
         }
       } catch (err) {
         alert('Error de conexión: ' + err.message);

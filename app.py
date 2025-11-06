@@ -123,6 +123,35 @@ class FavoritoDB(Base):
     actualizado_en = Column(DateTime, nullable=False)
 
 
+class SancionTipoDB(Base):
+    __tablename__ = "sancion_tipo"
+    id = Column(String(64), primary_key=True)
+    codigo = Column(String(64), nullable=False, unique=True)  # RB1: obligatorio, único, sin espacios
+    descripcion = Column(String(120), nullable=False)  # RB2: obligatoria, longitud 5-120
+    usuario_creacion = Column(String(64), nullable=True)  # Auditoría
+    creado_en = Column(DateTime, nullable=False)  # Auditoría
+    actualizado_en = Column(DateTime, nullable=False)  # Auditoría
+
+
+class LibroHistorialDB(Base):
+    """Tabla de historial para mantener trazabilidad de libros eliminados"""
+    __tablename__ = "libro_historial"
+    id = Column(String(64), primary_key=True)
+    id_libro_original = Column(String(64), nullable=False)  # ID original del libro eliminado
+    titulo = Column(String(255), nullable=False)
+    autor = Column(String(255), nullable=True)
+    isbn = Column(String(64), nullable=True)
+    codigo_inventario = Column(String(128), nullable=True)
+    categoria = Column(String(128), nullable=True)
+    motivo_eliminacion = Column(String(255), nullable=True)  # Razón de la eliminación
+    datos_completos = Column(Text, nullable=True)  # JSON con todos los datos del libro
+    usuario_eliminador = Column(String(64), nullable=True)  # Quién eliminó
+    fecha_eliminacion = Column(DateTime, nullable=False)
+    # Relaciones preservadas (solo para referencia histórica)
+    prestamos_relacionados = Column(Integer, default=0)  # Cantidad de préstamos que tenía
+    favoritos_relacionados = Column(Integer, default=0)  # Cantidad de favoritos que tenía
+
+
 # Configurar ruta de base de datos (absoluta para producción)
 db_path = os.environ.get('DATABASE_URL', 'sqlite:///bibliosena.db')
 # Render a veces usa postgres:// en lugar de postgresql://
@@ -151,28 +180,105 @@ def libro_from_request_db(data: Dict[str, Any]) -> LibroDB:
     es_equipo = 'equipo' in categoria or 'informático' in categoria or categoria in ['tablets', 'proyectores', 'otros']
     
     # Para equipos, el autor puede estar vacío o ser None
+    # Usar cadena vacía en lugar de None para compatibilidad con BD existentes
     autor = data.get('autor', '').strip() or None
     if es_equipo and not autor:
-        # Para equipos, usar el campo "marca" o "modelo" como referencia, o dejarlo None
-        autor = None
+        # Para equipos, usar cadena vacía como valor por defecto (compatible con NOT NULL)
+        autor = ''
+    
+    # Construir descripción para equipos si no se proporciona
+    descripcion = data.get('descripcion', '').strip() or None
+    if es_equipo and not descripcion:
+        # Construir descripción a partir de campos específicos de equipos
+        partes_descripcion = []
+        marca = data.get('marca', '').strip()
+        modelo = data.get('modelo', '').strip()
+        especificaciones = data.get('especificaciones', '').strip()
+        numero_serie = data.get('numero_serie', '').strip()
+        
+        if marca:
+            partes_descripcion.append(f"Marca: {marca}")
+        if modelo:
+            partes_descripcion.append(f"Modelo: {modelo}")
+        if especificaciones:
+            partes_descripcion.append(f"Especificaciones: {especificaciones}")
+        if numero_serie:
+            partes_descripcion.append(f"Número de serie: {numero_serie}")
+        
+        if partes_descripcion:
+            descripcion = "\n".join(partes_descripcion)
+        else:
+            descripcion = "Equipo informático"
+    elif es_equipo and descripcion:
+        # Si hay descripción manual, agregar información de equipos si está disponible
+        info_equipo = []
+        marca = data.get('marca', '').strip()
+        modelo = data.get('modelo', '').strip()
+        especificaciones = data.get('especificaciones', '').strip()
+        numero_serie = data.get('numero_serie', '').strip()
+        
+        if marca and 'Marca:' not in descripcion:
+            info_equipo.append(f"Marca: {marca}")
+        if modelo and 'Modelo:' not in descripcion:
+            info_equipo.append(f"Modelo: {modelo}")
+        if especificaciones and 'Especificaciones:' not in descripcion:
+            info_equipo.append(f"Especificaciones: {especificaciones}")
+        if numero_serie and 'Número de serie:' not in descripcion:
+            info_equipo.append(f"Número de serie: {numero_serie}")
+        
+        if info_equipo:
+            descripcion = descripcion + "\n\n" + "\n".join(info_equipo)
+    
+    # Manejar valores numéricos de forma segura
+    try:
+        anio_publicacion_val = int(data.get('anio_publicacion', 0) or 0)
+        anio_publicacion = anio_publicacion_val if anio_publicacion_val > 0 else None
+    except (ValueError, TypeError):
+        anio_publicacion = None
+    
+    try:
+        stock_val = int(data.get('stock', 0) or 0)
+        stock = stock_val if stock_val >= 0 else 0
+    except (ValueError, TypeError):
+        stock = 0
+    
+    try:
+        cantidad_disponible_val = int(data.get('cantidad_disponible', 0) or 0)
+        cantidad_disponible = cantidad_disponible_val if cantidad_disponible_val >= 0 else 0
+    except (ValueError, TypeError):
+        cantidad_disponible = stock  # Usar stock como fallback
+    
+    try:
+        cantidad_prestado_val = int(data.get('cantidad_prestado', 0) or 0)
+        cantidad_prestado = cantidad_prestado_val if cantidad_prestado_val >= 0 else 0
+    except (ValueError, TypeError):
+        cantidad_prestado = 0
+    
+    # Asegurar que descripción no sea None si es equipo
+    if es_equipo and not descripcion:
+        descripcion = "Equipo informático"
+    
+    # Asegurar que autor nunca sea None (usar cadena vacía para equipos)
+    if autor is None:
+        autor = ''
     
     return LibroDB(
         id=str(uuid.uuid4()),
-        titulo=data.get('titulo', ''),
-        autor=autor,  # Ahora puede ser None para equipos
-        isbn=data.get('isbn', '') or None,
-        editorial=data.get('editorial', '') or None,
-        anio_publicacion=int(data.get('anio_publicacion', 0) or 0) or None,
-        categoria=data.get('categoria', ''),
-        subcategoria=data.get('subcategoria', '') or None,
-        descripcion=data.get('descripcion', '') or None,
-        estado_disponibilidad=data.get('estado_disponibilidad', 'Disponible'),
-        estado_elemento=data.get('estado_elemento', 'Buen estado'),
-        stock=int(data.get('stock', 0) or 0),
-        cantidad_disponible=int(data.get('cantidad_disponible', 0) or 0),
-        cantidad_prestado=int(data.get('cantidad_prestado', 0) or 0),
+        titulo=data.get('titulo', '').strip(),
+        autor=autor,  # Cadena vacía para equipos, valor normal para libros
+        isbn=(data.get('isbn', '') or '').strip() or None,
+        editorial=(data.get('editorial', '') or '').strip() or None,
+        anio_publicacion=anio_publicacion,
+        categoria=(data.get('categoria', '') or '').strip(),
+        subcategoria=(data.get('subcategoria', '') or '').strip() or None,
+        descripcion=descripcion,
+        estado_disponibilidad=(data.get('estado_disponibilidad', '') or '').strip() or 'Disponible',
+        estado_elemento=(data.get('estado_elemento', '') or '').strip() or 'Buen estado',
+        stock=stock,
+        cantidad_disponible=cantidad_disponible,
+        cantidad_prestado=cantidad_prestado,
         imagen=None,
-        codigo_inventario=data.get('codigo_inventario') or None,
+        codigo_inventario=(data.get('codigo_inventario', '') or '').strip() or None,
         creado_en=now,
         actualizado_en=now,
     )
@@ -436,33 +542,81 @@ def api_login():
 
 @app.get('/api/libros')
 def libros_listar():
-    """Listar libros. Si hay múltiples copias del mismo libro, agruparlos por código_inventario o título/ISBN."""
+    """
+    Listar libros. Si hay múltiples copias del mismo libro, agruparlos por código_inventario o título/ISBN.
+    IMPORTANTE: Evita duplicados procesando cada registro solo una vez.
+    """
     db = SessionLocal()
     try:
         rows = db.query(LibroDB).all()
         
         # Agrupar por código_inventario si existe, sino por título+autor+ISBN único
         libros_agrupados = {}
+        ids_procesados = set()  # Para evitar procesar el mismo registro múltiples veces
+        
         for r in rows:
-            # Clave única: código_inventario o combinación título+autor+ISBN
-            if r.codigo_inventario:
-                clave = f"cod_{r.codigo_inventario}"
+            # Si ya fue procesado, saltarlo
+            if r.id in ids_procesados:
+                continue
+            
+            # Determinar clave de agrupación
+            if r.codigo_inventario and r.codigo_inventario.strip():
+                # Agrupar por código_inventario
+                clave = f"cod_{r.codigo_inventario.strip()}"
+                
+                # Buscar TODAS las copias con este código_inventario
+                copias_relacionadas = db.query(LibroDB).filter(
+                    LibroDB.codigo_inventario == r.codigo_inventario
+                ).all()
             else:
                 # Agrupar por título+autor+ISBN (libros idénticos)
-                clave = f"tit_{r.titulo or ''}_{r.autor or ''}_{r.isbn or ''}"
+                titulo_norm = (r.titulo or '').strip()
+                autor_norm = (r.autor or '').strip()
+                isbn_norm = (r.isbn or '').strip()
+                clave = f"tit_{titulo_norm}_{autor_norm}_{isbn_norm}"
+                
+                # Buscar TODAS las copias con estos datos (que NO tengan código_inventario)
+                copias_relacionadas = db.query(LibroDB).filter(
+                    LibroDB.titulo == titulo_norm,
+                    LibroDB.autor == autor_norm,
+                    LibroDB.isbn == isbn_norm,
+                    ((LibroDB.codigo_inventario == None) | (LibroDB.codigo_inventario == ''))
+                ).all()
             
-            if clave not in libros_agrupados:
-                # Primera copia, crear entrada
+            # Agrupar todas las copias encontradas
+            if copias_relacionadas:
+                libro_base = copias_relacionadas[0]  # Usar el primero como base
+                
+                # Sumar stocks de todas las copias
+                stock_total = sum(c.stock or 0 for c in copias_relacionadas)
+                cantidad_disponible_total = sum(c.cantidad_disponible or 0 for c in copias_relacionadas)
+                cantidad_prestado_total = sum(c.cantidad_prestado or 0 for c in copias_relacionadas)
+                
+                # Crear entrada agrupada
                 libros_agrupados[clave] = {
-                    **{k: getattr(r, k) for k in ['id','titulo','autor','isbn','editorial','anio_publicacion','categoria','subcategoria','descripcion','estado_disponibilidad','estado_elemento','stock','cantidad_disponible','cantidad_prestado','imagen','codigo_inventario']},
-                    'creado_en': r.creado_en.isoformat() + 'Z',
-                    'actualizado_en': r.actualizado_en.isoformat() + 'Z',
+                    'id': libro_base.id,
+                    'titulo': libro_base.titulo,
+                    'autor': libro_base.autor,
+                    'isbn': libro_base.isbn,
+                    'editorial': libro_base.editorial,
+                    'anio_publicacion': libro_base.anio_publicacion,
+                    'categoria': libro_base.categoria,
+                    'subcategoria': libro_base.subcategoria,
+                    'descripcion': libro_base.descripcion,
+                    'estado_disponibilidad': libro_base.estado_disponibilidad,
+                    'estado_elemento': libro_base.estado_elemento,
+                    'stock': stock_total,
+                    'cantidad_disponible': cantidad_disponible_total,
+                    'cantidad_prestado': cantidad_prestado_total,
+                    'imagen': libro_base.imagen,
+                    'codigo_inventario': libro_base.codigo_inventario,
+                    'creado_en': libro_base.creado_en.isoformat() + 'Z',
+                    'actualizado_en': libro_base.actualizado_en.isoformat() + 'Z',
                 }
-            else:
-                # Ya existe, sumar stock
-                libros_agrupados[clave]['stock'] = int((libros_agrupados[clave]['stock'] or 0) + (r.stock or 0))
-                libros_agrupados[clave]['cantidad_disponible'] = int((libros_agrupados[clave]['cantidad_disponible'] or 0) + (r.cantidad_disponible or 0))
-                libros_agrupados[clave]['cantidad_prestado'] = int((libros_agrupados[clave]['cantidad_prestado'] or 0) + (r.cantidad_prestado or 0))
+                
+                # Marcar TODAS las copias como procesadas
+                for copia in copias_relacionadas:
+                    ids_procesados.add(copia.id)
         
         items = list(libros_agrupados.values())
         return jsonify(items)
@@ -473,13 +627,59 @@ def libros_listar():
 @app.post('/api/libros')
 def libros_crear():
     data = request.form.to_dict() if request.form else (request.get_json(silent=True) or {})
+    
+    # Debug: mostrar datos recibidos
+    print("=" * 60)
+    print("DATOS RECIBIDOS EN /api/libros:")
+    print(f"Tipo de request: {type(request.form)}")
+    print(f"Datos recibidos: {data}")
+    print(f"Campos en request.form: {list(request.form.keys()) if request.form else 'No hay form'}")
+    print("=" * 60)
+    
     db = SessionLocal()
     try:
         # Validar campos requeridos
-        if not data.get('titulo', '').strip():
+        titulo = data.get('titulo', '').strip()
+        if not titulo:
             return jsonify({"ok": False, "error": "El título es requerido"}), 400
         
+        # Validar categoría
+        categoria = data.get('categoria', '').strip()
+        if not categoria:
+            return jsonify({"ok": False, "error": "La categoría es requerida"}), 400
+        
+        # Validar que para libros se tenga autor
+        es_equipo = 'equipo' in categoria.lower() or 'informático' in categoria.lower()
+        if not es_equipo:
+            autor = data.get('autor', '').strip()
+            if not autor:
+                return jsonify({"ok": False, "error": "El autor es requerido para libros"}), 400
+        # Para equipos, asegurar que autor sea cadena vacía si no está presente
+        elif es_equipo:
+            autor = data.get('autor', '').strip()
+            if not autor:
+                data['autor'] = ''  # Asegurar cadena vacía para equipos
+        
         libro = libro_from_request_db(data)
+        
+        # Asegurar que todos los campos requeridos por la BD tengan valores
+        if not libro.titulo:
+            return jsonify({"ok": False, "error": "El título es requerido"}), 400
+        if not libro.categoria:
+            return jsonify({"ok": False, "error": "La categoría es requerida"}), 400
+        if libro.stock is None:
+            libro.stock = 0
+        if libro.cantidad_disponible is None:
+            libro.cantidad_disponible = libro.stock or 0
+        if libro.cantidad_prestado is None:
+            libro.cantidad_prestado = 0
+        if not libro.estado_disponibilidad:
+            libro.estado_disponibilidad = 'Disponible'
+        if not libro.estado_elemento:
+            libro.estado_elemento = 'Buen estado'
+        if not libro.descripcion:
+            libro.descripcion = 'Sin descripción'
+        
         file = request.files.get('imagen') if 'imagen' in request.files else None
         if file and file.filename:
             uploads_dir = os.path.join(app.root_path, 'uploads')
@@ -490,15 +690,20 @@ def libros_crear():
             file.save(save_path)
             # Guardar ruta relativa que las plantillas esperan: 'uploads/<filename>'
             libro.imagen = f"uploads/{stored_name}"
+        
+        print(f"Libro a crear: titulo={libro.titulo}, categoria={libro.categoria}, autor={libro.autor}")
         db.add(libro)
         db.commit()
         return jsonify({"ok": True, "id": libro.id}), 201
     except Exception as e:
         db.rollback()
         error_msg = str(e)
+        import traceback
+        print(f"Error al crear elemento: {error_msg}")
+        print(traceback.format_exc())
         # Mensajes de error más amigables
         if "NOT NULL constraint" in error_msg or "null value" in error_msg.lower():
-            return jsonify({"ok": False, "error": "Faltan campos requeridos. Verifica que todos los campos obligatorios estén completos."}), 400
+            return jsonify({"ok": False, "error": f"Faltan campos requeridos: {error_msg}"}), 400
         return jsonify({"ok": False, "error": f"Error al crear elemento: {error_msg}"}), 500
     finally:
         db.close()
@@ -1089,14 +1294,115 @@ def libros_actualizar(libro_id: str):
 
 @app.delete('/api/libros/<libro_id>')
 def libros_eliminar(libro_id: str):
+    """
+    Eliminar libro con trazabilidad.
+    Si el libro tiene código_inventario, elimina todas las copias con ese código.
+    Si no, busca por título+autor+ISBN y elimina todas las copias relacionadas.
+    """
     db = SessionLocal()
     try:
-        r = db.get(LibroDB, libro_id)
-        if not r:
-            return ("No encontrado", 404)
-        db.delete(r)
+        # Obtener el libro original
+        libro_original = db.get(LibroDB, libro_id)
+        if not libro_original:
+            return jsonify({"ok": False, "error": "Libro no encontrado"}), 404
+        
+        # Determinar criterio de búsqueda
+        codigo_inventario = libro_original.codigo_inventario
+        titulo = libro_original.titulo or ''
+        autor = libro_original.autor or ''
+        isbn = libro_original.isbn or ''
+        
+        # Buscar TODOS los registros relacionados
+        if codigo_inventario:
+            # Si tiene código_inventario, buscar todas las copias con ese código
+            registros_relacionados = db.query(LibroDB).filter(
+                LibroDB.codigo_inventario == codigo_inventario
+            ).all()
+        else:
+            # Si no tiene código, buscar por título+autor+ISBN (libros idénticos)
+            registros_relacionados = db.query(LibroDB).filter(
+                LibroDB.titulo == titulo,
+                LibroDB.autor == autor,
+                LibroDB.isbn == isbn
+            ).all()
+        
+        if not registros_relacionados:
+            return jsonify({"ok": False, "error": "No se encontraron registros relacionados"}), 404
+        
+        # Contar relaciones antes de eliminar (para trazabilidad)
+        ids_a_eliminar = [r.id for r in registros_relacionados]
+        
+        # Contar préstamos relacionados
+        prestamos_count = db.query(PrestamoDB).filter(
+            PrestamoDB.id_elemento.in_(ids_a_eliminar)
+        ).count()
+        
+        # Contar favoritos relacionados
+        favoritos_count = db.query(FavoritoDB).filter(
+            FavoritoDB.id_elemento.in_(ids_a_eliminar)
+        ).count()
+        
+        # Contar waitlist relacionadas
+        waitlist_count = db.query(WaitlistDB).filter(
+            WaitlistDB.id_elemento.in_(ids_a_eliminar)
+        ).count()
+        
+        # Crear registro en historial (usar el primer registro como representativo)
+        libro_representativo = registros_relacionados[0]
+        import json
+        datos_completos = {
+            'titulo': libro_representativo.titulo,
+            'autor': libro_representativo.autor,
+            'isbn': libro_representativo.isbn,
+            'editorial': libro_representativo.editorial,
+            'categoria': libro_representativo.categoria,
+            'stock': sum(r.stock or 0 for r in registros_relacionados),
+            'cantidad_disponible': sum(r.cantidad_disponible or 0 for r in registros_relacionados),
+            'cantidad_prestado': sum(r.cantidad_prestado or 0 for r in registros_relacionados),
+            'codigo_inventario': codigo_inventario,
+            'total_copias': len(registros_relacionados)
+        }
+        
+        historial = LibroHistorialDB(
+            id=str(uuid.uuid4()),
+            id_libro_original=libro_id,
+            titulo=libro_representativo.titulo,
+            autor=libro_representativo.autor,
+            isbn=libro_representativo.isbn,
+            codigo_inventario=codigo_inventario,
+            categoria=libro_representativo.categoria,
+            datos_completos=json.dumps(datos_completos),
+            prestamos_relacionados=prestamos_count,
+            favoritos_relacionados=favoritos_count,
+            fecha_eliminacion=datetime.utcnow()
+        )
+        db.add(historial)
+        
+        # Eliminar relaciones (opcional: podemos comentar esto si queremos mantener historial completo)
+        # Eliminar favoritos
+        db.query(FavoritoDB).filter(FavoritoDB.id_elemento.in_(ids_a_eliminar)).delete(synchronize_session=False)
+        
+        # Eliminar waitlist
+        db.query(WaitlistDB).filter(WaitlistDB.id_elemento.in_(ids_a_eliminar)).delete(synchronize_session=False)
+        
+        # NOTA: NO eliminamos préstamos porque son parte del historial importante
+        # Los préstamos permanecen para trazabilidad, aunque el libro ya no exista
+        
+        # Eliminar TODOS los registros relacionados
+        for registro in registros_relacionados:
+            db.delete(registro)
+        
         db.commit()
-        return ("", 204)
+        
+        return jsonify({
+            "ok": True,
+            "eliminados": len(registros_relacionados),
+            "prestamos_preservados": prestamos_count,
+            "mensaje": f"Se eliminaron {len(registros_relacionados)} registro(s) relacionado(s). Historial preservado."
+        }), 200
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al eliminar: {str(e)}"}), 500
     finally:
         db.close()
 
@@ -1287,6 +1593,211 @@ def conectar_usuarios():
         db.close()
 
 
+# -------------------------------
+# API CRUD de Tipos de Sanción
+# -------------------------------
+
+def validar_sancion_tipo(codigo, descripcion, db, excluir_id=None):
+    """
+    Validaciones según RB1-RB4:
+    RB1: Código obligatorio, único y sin espacios
+    RB2: Descripción obligatoria; longitud 5-120
+    RB3: Código en mayúsculas recomendado
+    RB4: Verificar duplicados antes de insertar
+    
+    Retorna: (errores, codigo_validado, descripcion_validada)
+    """
+    errores = []
+    
+    # RB1: Código obligatorio
+    if not codigo or not codigo.strip():
+        errores.append("El código es obligatorio")
+        return (errores, None, None)
+    
+    codigo = codigo.strip()
+    
+    # RB1: Código sin espacios
+    if ' ' in codigo:
+        errores.append("El código no debe tener espacios")
+        return (errores, None, None)
+    
+    # RB3: Convertir a mayúsculas (recomendado)
+    codigo_validado = codigo.upper()
+    
+    # RB4: Verificar duplicados antes de insertar
+    query = db.query(SancionTipoDB).filter(SancionTipoDB.codigo == codigo_validado)
+    if excluir_id:
+        query = query.filter(SancionTipoDB.id != excluir_id)
+    existe = query.first()
+    if existe:
+        errores.append("El código ya está registrado")
+        return (errores, None, None)
+    
+    # RB2: Descripción obligatoria
+    if not descripcion or not descripcion.strip():
+        errores.append("La descripción es obligatoria")
+        return (errores, None, None)
+    
+    descripcion_validada = descripcion.strip()
+    
+    # RB2: Descripción longitud 5-120
+    if len(descripcion_validada) < 5:
+        errores.append("La descripción debe tener mínimo 5 caracteres")
+        return (errores, None, None)
+    
+    if len(descripcion_validada) > 120:
+        errores.append("La descripción debe tener máximo 120 caracteres")
+        return (errores, None, None)
+    
+    return (errores, codigo_validado, descripcion_validada)
+
+
+@app.get('/api/sancion-tipos')
+def sancion_tipos_listar():
+    """Listar todos los tipos de sanción"""
+    db = SessionLocal()
+    try:
+        tipos = db.query(SancionTipoDB).order_by(SancionTipoDB.codigo).all()
+        items = []
+        for t in tipos:
+            items.append({
+                'id': t.id,
+                'codigo': t.codigo,
+                'descripcion': t.descripcion,
+                'usuario_creacion': t.usuario_creacion,
+                'creado_en': t.creado_en.isoformat() + 'Z',
+                'actualizado_en': t.actualizado_en.isoformat() + 'Z'
+            })
+        return jsonify(items)
+    finally:
+        db.close()
+
+
+@app.get('/api/sancion-tipos/<tipo_id>')
+def sancion_tipo_obtener(tipo_id: str):
+    """Obtener un tipo de sanción por ID"""
+    db = SessionLocal()
+    try:
+        tipo = db.get(SancionTipoDB, tipo_id)
+        if not tipo:
+            return jsonify({"error": "Tipo de sanción no encontrado"}), 404
+        return jsonify({
+            'id': tipo.id,
+            'codigo': tipo.codigo,
+            'descripcion': tipo.descripcion,
+            'usuario_creacion': tipo.usuario_creacion,
+            'creado_en': tipo.creado_en.isoformat() + 'Z',
+            'actualizado_en': tipo.actualizado_en.isoformat() + 'Z'
+        })
+    finally:
+        db.close()
+
+
+@app.post('/api/sancion-tipos')
+def sancion_tipo_crear():
+    """Crear un nuevo tipo de sanción con validaciones RB1-RB4"""
+    data = request.get_json(silent=True) or request.form.to_dict()
+    
+    codigo = data.get('codigo', '').strip() if data.get('codigo') else ''
+    descripcion = data.get('descripcion', '').strip() if data.get('descripcion') else ''
+    usuario_creacion = data.get('usuario_creacion')  # Opcional para auditoría
+    
+    db = SessionLocal()
+    try:
+        # Separar validaciones de persistencia (flujo éxito/error)
+        errores, codigo_validado, descripcion_validada = validar_sancion_tipo(codigo, descripcion, db)
+        if errores:
+            # Mensajes de error claros y específicos por validación
+            return jsonify({"ok": False, "error": errores[0]}), 400
+        
+        # Crear registro con auditoría usando valores validados
+        now = datetime.utcnow()
+        tipo = SancionTipoDB(
+            id=str(uuid.uuid4()),
+            codigo=codigo_validado,
+            descripcion=descripcion_validada,
+            usuario_creacion=usuario_creacion,
+            creado_en=now,
+            actualizado_en=now
+        )
+        
+        db.add(tipo)
+        db.commit()
+        
+        return jsonify({
+            "ok": True,
+            "id": tipo.id,
+            "codigo": tipo.codigo,
+            "descripcion": tipo.descripcion,
+            "mensaje": "Registro exitoso"
+        }), 201
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al crear tipo de sanción: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+@app.put('/api/sancion-tipos/<tipo_id>')
+def sancion_tipo_actualizar(tipo_id: str):
+    """Actualizar un tipo de sanción existente"""
+    data = request.get_json(silent=True) or request.form.to_dict()
+    
+    codigo = data.get('codigo', '').strip() if data.get('codigo') else ''
+    descripcion = data.get('descripcion', '').strip() if data.get('descripcion') else ''
+    
+    db = SessionLocal()
+    try:
+        tipo = db.get(SancionTipoDB, tipo_id)
+        if not tipo:
+            return jsonify({"ok": False, "error": "Tipo de sanción no encontrado"}), 404
+        
+        # Validar con exclusión del ID actual
+        errores, codigo_validado, descripcion_validada = validar_sancion_tipo(codigo, descripcion, db, excluir_id=tipo_id)
+        if errores:
+            return jsonify({"ok": False, "error": errores[0]}), 400
+        
+        # Actualizar campos con valores validados
+        tipo.codigo = codigo_validado
+        tipo.descripcion = descripcion_validada
+        tipo.actualizado_en = datetime.utcnow()
+        
+        db.commit()
+        
+        return jsonify({
+            "ok": True,
+            "id": tipo.id,
+            "codigo": tipo.codigo,
+            "descripcion": tipo.descripcion,
+            "mensaje": "Tipo de sanción actualizado correctamente"
+        })
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al actualizar tipo de sanción: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+@app.delete('/api/sancion-tipos/<tipo_id>')
+def sancion_tipo_eliminar(tipo_id: str):
+    """Eliminar un tipo de sanción"""
+    db = SessionLocal()
+    try:
+        tipo = db.get(SancionTipoDB, tipo_id)
+        if not tipo:
+            return jsonify({"ok": False, "error": "Tipo de sanción no encontrado"}), 404
+        
+        db.delete(tipo)
+        db.commit()
+        
+        return jsonify({"ok": True, "mensaje": "Tipo de sanción eliminado correctamente"}), 200
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al eliminar tipo de sanción: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
 def create_app():
     return app
 
@@ -1328,10 +1839,71 @@ def migrar_base_datos():
             db.commit()
             print("✓ Columna codigo_inventario agregada correctamente")
         
-        # SQLite no soporta ALTER COLUMN directamente, pero podemos recrear la tabla
-        # Por ahora, SQLite permite NULL en columnas aunque se hayan definido como NOT NULL
-        # Si hay problemas, la migración se hará automáticamente al crear nuevos registros
-        print("✓ Campo autor ahora es opcional (para equipos/PCs)")
+        # Migrar columna autor para permitir NULL (SQLite no soporta ALTER COLUMN directamente)
+        try:
+            # Verificar si la columna autor tiene restricción NOT NULL
+            result = db.execute(text("PRAGMA table_info(libros)"))
+            columns = result.fetchall()
+            autor_col = None
+            for col in columns:
+                if col[1] == 'autor':  # col[1] es el nombre de la columna
+                    autor_col = col
+                    break
+            
+            if autor_col and autor_col[3] == 1:  # col[3] es notnull (1 = NOT NULL, 0 = NULL permitido)
+                print("Migrando columna autor para permitir NULL...")
+                # SQLite no soporta cambiar NOT NULL directamente, necesitamos recrear la tabla
+                db.execute(text("""
+                    CREATE TABLE libros_new (
+                        id VARCHAR(64) PRIMARY KEY,
+                        titulo VARCHAR(255) NOT NULL,
+                        autor VARCHAR(255),
+                        isbn VARCHAR(64),
+                        editorial VARCHAR(255),
+                        anio_publicacion INTEGER,
+                        categoria VARCHAR(128),
+                        subcategoria VARCHAR(128),
+                        descripcion TEXT,
+                        estado_disponibilidad VARCHAR(64),
+                        estado_elemento VARCHAR(64),
+                        stock INTEGER DEFAULT 0,
+                        cantidad_disponible INTEGER DEFAULT 0,
+                        cantidad_prestado INTEGER DEFAULT 0,
+                        imagen VARCHAR(512),
+                        codigo_inventario VARCHAR(128),
+                        creado_en DATETIME NOT NULL,
+                        actualizado_en DATETIME NOT NULL
+                    )
+                """))
+                
+                # Copiar datos existentes
+                db.execute(text("""
+                    INSERT INTO libros_new 
+                    SELECT id, titulo, autor, isbn, editorial, anio_publicacion, categoria, subcategoria,
+                           descripcion, estado_disponibilidad, estado_elemento,
+                           stock, cantidad_disponible, cantidad_prestado,
+                           imagen, codigo_inventario, creado_en, actualizado_en
+                    FROM libros
+                """))
+                
+                # Crear índices si existen en la tabla original
+                try:
+                    db.execute(text("CREATE INDEX IF NOT EXISTS idx_libros_categoria ON libros_new(categoria)"))
+                    db.execute(text("CREATE INDEX IF NOT EXISTS idx_libros_codigo_inv ON libros_new(codigo_inventario)"))
+                except Exception:
+                    pass
+                
+                # Eliminar tabla vieja y renombrar la nueva
+                db.execute(text("DROP TABLE libros"))
+                db.execute(text("ALTER TABLE libros_new RENAME TO libros"))
+                db.commit()
+                print("✓ Columna autor migrada correctamente (ahora permite NULL)")
+            else:
+                print("✓ Campo autor ya permite NULL (para equipos/PCs)")
+        except Exception as e:
+            print(f"⚠️  Error en migración de autor: {e}")
+            print("   Continuando... (se usará valor por defecto para equipos)")
+            db.rollback()
         
         # Verificar y agregar columnas al modelo UserDB si no existen
         try:
@@ -1360,6 +1932,53 @@ def migrar_base_datos():
                 pass
             db.commit()
             print("✓ Columnas de usuarios agregadas correctamente")
+        
+        # Crear tabla sancion_tipo si no existe
+        try:
+            db.execute(text("SELECT 1 FROM sancion_tipo LIMIT 1"))
+        except Exception:
+            try:
+                db.execute(text("""
+                    CREATE TABLE sancion_tipo (
+                        id TEXT PRIMARY KEY,
+                        codigo TEXT NOT NULL UNIQUE,
+                        descripcion TEXT NOT NULL,
+                        usuario_creacion TEXT,
+                        creado_en TEXT NOT NULL,
+                        actualizado_en TEXT NOT NULL
+                    )
+                """))
+                db.commit()
+                print("✓ Tabla sancion_tipo creada")
+            except Exception as e:
+                print(f"Error creando tabla sancion_tipo: {e}")
+        
+        # Crear tabla libro_historial si no existe
+        try:
+            db.execute(text("SELECT 1 FROM libro_historial LIMIT 1"))
+        except Exception:
+            try:
+                db.execute(text("""
+                    CREATE TABLE libro_historial (
+                        id TEXT PRIMARY KEY,
+                        id_libro_original TEXT NOT NULL,
+                        titulo TEXT NOT NULL,
+                        autor TEXT,
+                        isbn TEXT,
+                        codigo_inventario TEXT,
+                        categoria TEXT,
+                        motivo_eliminacion TEXT,
+                        datos_completos TEXT,
+                        usuario_eliminador TEXT,
+                        fecha_eliminacion TEXT NOT NULL,
+                        prestamos_relacionados INTEGER DEFAULT 0,
+                        favoritos_relacionados INTEGER DEFAULT 0
+                    )
+                """))
+                db.commit()
+                print("✓ Tabla libro_historial creada")
+            except Exception as e:
+                print(f"Error creando tabla libro_historial: {e}")
     except Exception as e:
         print(f"Error en migración: {e}")
         db.rollback()
