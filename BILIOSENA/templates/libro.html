@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Registrar Elemento</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/libro.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .tipo-selector {
       display: flex;
@@ -179,6 +180,17 @@
   </div>
   
   <script>
+    function mostrarSwal(icono, titulo, texto, opciones = {}) {
+      return Swal.fire({
+        icon: icono,
+        title: titulo,
+        text: texto,
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#3085d6',
+        ...opciones
+      });
+    }
+
     let tipoSeleccionado = null;
     
     function seleccionarTipo(tipo) {
@@ -237,7 +249,7 @@
       e.preventDefault();
       
       if (!tipoSeleccionado) {
-        alert('Por favor selecciona primero el tipo de elemento (Libro o PC)');
+        await mostrarSwal('warning', 'Selecciona un tipo', 'Elige si registrarás un libro o un equipo antes de continuar.');
         return;
       }
       
@@ -258,18 +270,18 @@
         }
         
         if (res.ok && (data.ok !== false)) {
-          alert('✓ Elemento registrado correctamente');
+          await mostrarSwal('success', 'Elemento registrado', 'El recurso se guardó correctamente.');
           e.target.reset();
           tipoSeleccionado = null;
           document.querySelectorAll('.tipo-option').forEach(opt => opt.classList.remove('selected'));
           document.getElementById('formRegistro').style.display = 'none';
         } else {
           const errorMsg = data.error || `Error ${res.status}: ${res.statusText}` || 'Error desconocido';
-          alert('✗ Error al registrar: ' + errorMsg);
+          await mostrarSwal('error', 'No se pudo registrar', errorMsg);
           console.error('Error completo:', data);
         }
       } catch (err) {
-        alert('Error de conexión: ' + err.message);
+        await mostrarSwal('error', 'Error de conexión', err.message || 'No fue posible completar el registro.');
         console.error('Error:', err);
       }
     });

@@ -5,6 +5,17 @@ const phraseElement = document.querySelector('.tagline .phrase');
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 
+function mostrarSweetAlert(icon, title, text, options = {}) {
+  return Swal.fire({
+    icon,
+    title,
+    text,
+    confirmButtonText: 'Aceptar',
+    confirmButtonColor: '#3085d6',
+    ...options
+  });
+}
+
 const phraseSets = {
   login: [
     'Bienvenido a BIBLIOSENA 📚',
@@ -88,9 +99,9 @@ if (loginForm) {
     const password = document.getElementById('login-password').value.trim();
 
     if (!username || !password) {
-      alert('Por favor completa todos los campos para iniciar sesión.');
-      return;
-    }
+    await mostrarSweetAlert('warning', 'Campos incompletos', 'Por favor completa todos los campos para iniciar sesión.');
+    return;
+  }
 
     try {
       const res = await fetch('/api/login', {
@@ -108,12 +119,12 @@ if (loginForm) {
         }
         window.location.href = 'principal.html';
       } else {
-        alert(data.error || 'Error de autenticación. Inténtalo de nuevo.');
-      }
-    } catch (error) {
-      alert('No se pudo iniciar sesión. Verifica tu conexión.');
+      await mostrarSweetAlert('error', 'Error de autenticación', data.error || 'Inténtalo de nuevo.');
     }
-  });
+  } catch (error) {
+    await mostrarSweetAlert('error', 'Sin conexión', 'No se pudo iniciar sesión. Verifica tu conexión.');
+  }
+});
 }
 
 if (registerForm) {
@@ -132,20 +143,20 @@ if (registerForm) {
     const confirm = document.getElementById('reg-confirm').value;
     const acepta = document.getElementById('reg-acepta').checked;
 
-    if (!nombre || !tipoDocumento || !ficha || !documento || !correo || !telefono || !tipoUsuario || !username || !password || !confirm) {
-      alert('Por favor completa todos los campos para registrarte.');
-      return;
-    }
+  if (!nombre || !tipoDocumento || !ficha || !documento || !correo || !telefono || !tipoUsuario || !username || !password || !confirm) {
+    await mostrarSweetAlert('warning', 'Campos incompletos', 'Por favor completa todos los campos para registrarte.');
+    return;
+  }
 
-    if (password !== confirm) {
-      alert('Las contraseñas no coinciden.');
-      return;
-    }
+  if (password !== confirm) {
+    await mostrarSweetAlert('warning', 'Contraseñas distintas', 'Las contraseñas no coinciden.');
+    return;
+  }
 
-    if (!acepta) {
-      alert('Debes aceptar los términos y condiciones.');
-      return;
-    }
+  if (!acepta) {
+    await mostrarSweetAlert('info', 'Acepta los términos', 'Debes aceptar los términos y condiciones.');
+    return;
+  }
 
     const payload = {
       nombre,
@@ -168,18 +179,18 @@ if (registerForm) {
       });
       const data = await res.json();
 
-      if (res.ok && data.ok) {
-        alert('Usuario creado correctamente. Ya puedes iniciar sesión.');
-        registerForm.reset();
-        viewport.classList.remove('register-active');
-        setPhraseSet('login');
-      } else {
-        alert(data.error || 'No se pudo registrar el usuario.');
-      }
-    } catch (error) {
-      alert('Error de red. Inténtalo nuevamente.');
+    if (res.ok && data.ok) {
+      await mostrarSweetAlert('success', 'Cuenta creada', 'Usuario registrado correctamente. Ya puedes iniciar sesión.');
+      registerForm.reset();
+      viewport.classList.remove('register-active');
+      setPhraseSet('login');
+    } else {
+      await mostrarSweetAlert('error', 'No se pudo registrar', data.error || 'Intenta nuevamente.');
     }
-  });
+  } catch (error) {
+    await mostrarSweetAlert('error', 'Error de red', 'Inténtalo nuevamente.');
+  }
+});
 }
 
 const canvas = document.getElementById('particles');

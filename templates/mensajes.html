@@ -314,6 +314,17 @@
   </main>
 
   <script>
+    function mostrarSwal(icono, titulo, texto, opciones = {}) {
+      return Swal.fire({
+        icon: icono,
+        title: titulo,
+        text: texto,
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#3085d6',
+        ...opciones
+      });
+    }
+
     function obtenerMiId() {
       const guardado = localStorage.getItem('miId');
       if (guardado) return guardado;
@@ -334,8 +345,8 @@
           }
         } catch (e) {}
       }
-      alert('Necesitas iniciar sesión primero');
-      window.location.href = 'login.html';
+      mostrarSwal('warning', 'Inicia sesión', 'Necesitas iniciar sesión para usar los mensajes.')
+        .then(() => { window.location.href = 'login.html'; });
       return null;
     }
 
@@ -570,10 +581,10 @@
           if (destinatario === 'admin') composerSubject.value = '';
           await cargarMensajes();
         } else {
-          alert(data.error || 'No se pudo enviar el mensaje.');
+        await mostrarSwal('error', 'No se pudo enviar', data.error || 'Intenta nuevamente.');
         }
       } catch (error) {
-        alert('Error de conexión al enviar el mensaje.');
+      await mostrarSwal('error', 'Error de conexión', 'No se pudo enviar el mensaje.');
       }
     });
 

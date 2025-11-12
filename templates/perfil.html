@@ -119,6 +119,17 @@
   </main>
 
   <script>
+    function mostrarAlerta(icono, titulo, texto, opciones = {}) {
+      return Swal.fire({
+        icon: icono,
+        title: titulo,
+        text: texto,
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#3085d6',
+        ...opciones
+      });
+    }
+
     async function cargarPerfil() {
       const token = localStorage.getItem('token');
       let userId = null;
@@ -137,7 +148,7 @@
         document.getElementById('avatarInitial').textContent = '👑';
         return;
       } else {
-        alert('Necesitas iniciar sesión para ver tu perfil');
+        await mostrarAlerta('warning', 'Inicia sesión', 'Necesitas iniciar sesión para ver tu perfil.');
         window.location.href = 'login.html';
         return;
       }
@@ -175,7 +186,7 @@
         
       } catch (e) {
         console.error('Error cargando perfil:', e);
-        alert('Error al cargar el perfil. Intenta recargar la página.');
+        await mostrarAlerta('error', 'No se pudo cargar el perfil', 'Intenta recargar la página.');
       }
     }
     

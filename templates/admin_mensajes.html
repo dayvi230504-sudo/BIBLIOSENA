@@ -108,12 +108,37 @@
   </main>
 
   <script>
+    function mostrarSwal(icono, titulo, texto, opciones = {}) {
+      return Swal.fire({
+        icon: icono,
+        title: titulo,
+        text: texto,
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#3085d6',
+        ...opciones
+      });
+    }
+
+    function confirmarSwal(opciones = {}) {
+      return Swal.fire({
+        icon: opciones.icon || 'question',
+        title: opciones.title || '¿Estás seguro?',
+        text: opciones.text || '',
+        showCancelButton: true,
+        confirmButtonText: opciones.confirmButtonText || 'Sí, continuar',
+        cancelButtonText: opciones.cancelButtonText || 'Cancelar',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        ...opciones
+      });
+    }
+
     // Protección: solo admins
     (function(){
       const t = localStorage.getItem('token');
       if (t !== 'admin-token') {
-        alert('Acceso restringido a administradores');
-        window.location.href = 'principal.html';
+        mostrarSwal('error', 'Acceso restringido', 'Esta sección es exclusiva para administradores.')
+          .then(() => { window.location.href = 'principal.html'; });
       }
     })();
 
@@ -207,13 +232,13 @@
         
         const data = await res.json().catch(()=>({}));
         if (res.ok && data.ok) {
-          alert('✓ Mensaje enviado al usuario');
+          await mostrarSwal('success', 'Mensaje enviado', 'El usuario recibió tu respuesta.');
           cargarMensajesAdmin();
         } else {
-          alert('✗ ' + (data.error || 'Error al enviar mensaje'));
+          await mostrarSwal('error', 'No se pudo enviar', data.error || 'Intenta nuevamente.');
         }
       } catch(e) {
-        alert('Error de conexión');
+        await mostrarSwal('error', 'Error de conexión', 'No se pudo enviar el mensaje.');
       }
     }
 
@@ -234,12 +259,12 @@
         })
       }).then(res => res.json()).then(data => {
         if (data.ok) {
-          alert('✓ Usuarios conectados. Ahora pueden chatear entre sí.');
+          mostrarSwal('success', 'Usuarios conectados', 'Ahora pueden chatear entre sí.');
         } else {
-          alert('✗ ' + (data.error || 'Error al conectar usuarios'));
+          mostrarSwal('error', 'No se pudo conectar', data.error || 'Intenta nuevamente.');
         }
       }).catch(e => {
-        alert('Error de conexión');
+        mostrarSwal('error', 'Error de conexión', 'No se pudo establecer la conexión.');
       });
     }
 

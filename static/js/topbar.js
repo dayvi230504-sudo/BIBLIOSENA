@@ -147,18 +147,29 @@
 
     if (linkCerrar && !linkCerrar.dataset.topbarActionInit) {
       linkCerrar.dataset.topbarActionInit = '1';
-      linkCerrar.addEventListener('click', (ev) => {
+      linkCerrar.addEventListener('click', async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('userData');
-          localStorage.removeItem('miId');
-          hideMenu(menu, container);
-          setTimeout(() => {
-            window.location.replace('login.html');
-          }, 100);
-        }
+        const confirmacion = await Swal.fire({
+          icon: 'question',
+          title: 'Cerrar sesión',
+          text: '¿Estás seguro de que quieres cerrar sesión?',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cerrar sesión',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6'
+        });
+
+        if (!confirmacion.isConfirmed) return;
+
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('miId');
+        hideMenu(menu, container);
+        setTimeout(() => {
+          window.location.replace('login.html');
+        }, 100);
       });
     }
   }

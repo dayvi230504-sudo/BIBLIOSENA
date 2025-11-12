@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Formulario de Registro</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/registro.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="form-container">
@@ -55,6 +56,17 @@
         </form>
     </div>
     <script>
+      function mostrarSwal(icono, titulo, texto, opciones = {}) {
+        return Swal.fire({
+          icon: icono,
+          title: titulo,
+          text: texto,
+          confirmButtonText: 'Aceptar',
+          confirmButtonColor: '#3085d6',
+          ...opciones
+        });
+      }
+
       const form = document.getElementById('regForm');
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -70,13 +82,13 @@
           const res = await fetch('/api/usuarios', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           const data = await res.json();
           if (res.ok && data.ok) {
-            alert('Usuario creado. Ahora puedes iniciar sesión.');
+            await mostrarSwal('success', 'Usuario creado', 'Ya puedes iniciar sesión.');
             window.location.href = 'login.html';
           } else {
-            alert(data.error || 'No se pudo registrar');
+            await mostrarSwal('error', 'No se pudo registrar', data.error || 'Intenta nuevamente.');
           }
         } catch (e) {
-          alert('Error de red');
+          await mostrarSwal('error', 'Error de red', 'No fue posible registrar el usuario.');
         }
       });
     </script>

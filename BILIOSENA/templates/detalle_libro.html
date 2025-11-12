@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalles del Libro - Biblioteca SENA</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/detalle_libro.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
   <header class="encabezado">
@@ -124,6 +125,31 @@
   </footer>
 
   <script>
+    function mostrarSwal(icono, titulo, texto, opciones = {}) {
+      return Swal.fire({
+        icon: icono,
+        title: titulo,
+        text: texto,
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#3085d6',
+        ...opciones
+      });
+    }
+
+    function confirmarSwal(opciones = {}) {
+      return Swal.fire({
+        icon: opciones.icon || 'question',
+        title: opciones.title || '¿Confirmas la acción?',
+        text: opciones.text || '',
+        showCancelButton: true,
+        confirmButtonText: opciones.confirmButtonText || 'Sí, continuar',
+        cancelButtonText: opciones.cancelButtonText || 'Cancelar',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        ...opciones
+      });
+    }
+
     // Obtener parámetros de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const libroId = urlParams.get('id');
@@ -325,10 +351,21 @@
       }
       
       if (!idUsuario) {
-        alert('Necesitas iniciar sesión para solicitar un préstamo');
+        await mostrarSwal('warning', 'Inicia sesión', 'Necesitas iniciar sesión para solicitar un préstamo.');
         window.location.href = 'login.html';
         return;
       }
+
+      const confirmacion = await confirmarSwal({
+        title: 'Confirmar solicitud',
+        text: '¿Deseas enviar la solicitud de préstamo?',
+        confirmButtonText: 'Sí, enviar'
+      });
+
+      if (!confirmacion.isConfirmed) {
+        return;
+      }
+
       try {
         // Incluir id_usuario desde el inicio
         let payload = { 
@@ -344,12 +381,20 @@
         
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
-          alert(`✅ Solicitud enviada correctamente.\n\n👤 Usuario: ${nombreUsuario || 'N/A'}\n🆔 Cédula: ${documentoUsuario || idUsuario}\n\nQueda pendiente de aprobación por el administrador.`);
+          const htmlMensaje = `
+            <p style="margin:0;">Solicitud enviada correctamente.</p>
+            <p style="margin-top:12px; text-align:left;">
+              👤 Usuario: <strong>${nombreUsuario || 'N/A'}</strong><br>
+              🆔 Cédula: <strong>${documentoUsuario || idUsuario}</strong>
+            </p>
+            <p style="margin-top:12px;">Queda pendiente de aprobación por el administrador.</p>
+          `;
+          await mostrarSwal('success', 'Solicitud enviada', '', { html: htmlMensaje });
           return;
         }
-        alert('❌ ' + (data.error || 'No se pudo registrar el préstamo'));
+        await mostrarSwal('error', 'No se pudo registrar el préstamo', data.error || 'Inténtalo nuevamente.');
       } catch (e) {
-        alert('Error de red al solicitar el préstamo: ' + e.message);
+        await mostrarSwal('error', 'Error de red', 'No se pudo completar la solicitud: ' + (e.message || e));
       }
     }
 
