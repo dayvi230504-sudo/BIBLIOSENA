@@ -72,12 +72,12 @@
     }
   </style>
 </head>
-<body>
-  <header class="encabezado">
-    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
-    <h2 style="margin-left:16px; flex:1;">👤 Mi Perfil</h2>
-    <a href="principal.html" class="btn-volver">← Volver</a>
-  </header>
+<body class="with-topbar">
+  {% set active_page = 'perfil' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarPerfil' %}
+  {% include 'includes/topbar.html' %}
 
   <main class="content">
     <div class="perfil-container">

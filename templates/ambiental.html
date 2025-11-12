@@ -7,19 +7,8 @@
 </head>
 <body>
 
-  <header class="encabezado">
-    <img src="https://www.epicu.co/wp-content/uploads/2023/02/Logosimbolo-SENA-PRINCIPAL.png" alt="Logo SENA" class="logo">
-    <div class="buscador">
-      <input type="text" placeholder="Buscar">
-      <button><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/></svg></button>
-    </div>
-    <div class="usuario">
-      <span>Andres Vergel</span>
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
-    </div>
-  </header>
-  <nav class="menu">
-    <a href="#">Novedades</a>
-    <a href="#">Libros</a>
-    <a href="#">Categorías</a>
-  </nav>
+  {% set active_page = 'categorias' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarCategorias' %}
+  {% include 'includes/topbar.html' %}

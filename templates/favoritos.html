@@ -82,11 +82,11 @@
   </style>
 </head>
 <body>
-  <header class="encabezado">
-    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
-    <h2 style="margin-left:16px; flex:1;">❤️ Mis Favoritos</h2>
-    <a href="principal.html" style="background:#667eea; color:white; padding:8px 16px; border:none; border-radius:6px; text-decoration:none; margin-right:8px;">← Volver</a>
-  </header>
+  {% set active_page = 'favoritos' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarFavoritos' %}
+  {% include 'includes/topbar.html' %}
 
   <main class="content">
     <div class="favoritos-container">
@@ -140,15 +140,16 @@
           const res = await fetch(`/api/libros/${id}`);
           if (res.ok) {
             const elemento = await res.json();
+            const placeholder = '/static/img/placeholder-book.svg';
             const imgSrc = elemento.imagen ? 
               (elemento.imagen.startsWith('uploads/') ? `/${elemento.imagen}` : elemento.imagen) : 
-              '/static/uploads/libro1.jpg';
+              placeholder;
             
             const card = document.createElement('div');
             card.className = 'favorito-card';
             card.innerHTML = `
               <button class="btn-quitar" onclick="event.stopPropagation(); quitarFavorito('${id}')" title="Quitar de favoritos">×</button>
-              <img src="${imgSrc}" alt="${elemento.titulo || ''}" onerror="this.src='/static/uploads/libro1.jpg'">
+              <img src="${imgSrc}" alt="${elemento.titulo || ''}" onerror="this.src='${placeholder}'">
               <h3>${elemento.titulo || 'Sin título'}</h3>
               <p class="autor">${elemento.autor || ''}</p>
             `;

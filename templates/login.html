@@ -1,88 +1,149 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inicio de Sesión</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/inicio.css') }}" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIBLIOSENA | Acceso</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bibliosena-login.css') }}">
 </head>
 <body>
-  <header class="header">
-    <img src="https://www.epicu.co/wp-content/uploads/2023/02/Logosimbolo-SENA-PRINCIPAL.png" alt="Logo SENA" class="logo">
-    <h1>GESTION DE PRESTAMOS Y SANCIONES</h1>
-  </header>
-
-  <main class="login-container">
-    <div class="login-card">
-      <div class="user-icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg></div>
-      <h2>INICIO DE SESION</h2>
-      <form id="loginForm">
-        <label for="username">USUARIO</label>
-        <input type="text" id="username" name="username" placeholder="Ingresa tu usuario o correo" required />
-
-        <label for="password">CONTRASEÑA</label>
-        <input type="password" id="password" name="password" required />
-
-<button type="submit" style="display: inline-flex; align-items: center; padding: 10px 20px; background-color: #eee; border: none; text-decoration: none; color: black; font-weight: bold; cursor: pointer;">
-  <span>INICIAR</span>
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 74 74"
-    height="34"
-    width="34"
-    style="margin-left: 10px;"
-  >
-    <circle stroke-width="3" stroke="black" r="35.5" cy="37" cx="37"></circle>
-    <path
-      fill="black"
-      d="M25 35.5C24.1716 35.5 23.5 36.1716 23.5 37C23.5 37.8284 24.1716 38.5 25 38.5V35.5ZM49.0607 38.0607C49.6464 37.4749 49.6464 36.5251 49.0607 35.9393L39.5147 26.3934C38.9289 25.8076 37.9792 25.8076 37.3934 26.3934C36.8076 26.9792 36.8076 27.9289 37.3934 28.5147L45.8787 37L37.3934 45.4853C36.8076 46.0711 36.8076 47.0208 37.3934 47.6066C37.9792 48.1924 38.9289 48.1924 39.5147 47.6066L49.0607 38.0607ZM25 38.5L48 38.5V35.5L25 35.5V38.5Z"
-    ></path>
-  </svg>
- </button>
-
-
-
-        
-
-      </form>
-      <div class="links">
-        <a href="registro.html">REGISTRARSE</a><br />
-        <a href="recuperar.html">¿OLVIDASTE TU CONTRASEÑA?</a>
+  <main class="viewport initial" id="viewport">
+    <aside class="info-panel">
+      <canvas id="particles" aria-hidden="true"></canvas>
+      <div class="overlay">
+        <div class="tagline" aria-live="polite">
+          <span class="phrase current">Bienvenido a BIBLIOSENA 📚</span>
+        </div>
+        <div class="illustration" aria-hidden="true">
+          <svg width="360" height="260" viewBox="0 0 640 480" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#E1D9FF" stop-opacity="0.6"/>
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <g filter="url(#glow)">
+              <path d="M110 130 C130 60, 220 50, 280 110 L280 360 C220 300, 140 320, 110 360 Z" fill="url(#bookGradient)" opacity="0.95"/>
+              <path d="M280 110 C340 50, 430 60, 460 130 L460 360 C430 310, 350 320, 280 360 Z" fill="#F5F0FF" opacity="0.85"/>
+              <path d="M200 160 L200 120 C220 110, 240 90, 260 95 L260 135 Z" fill="#C5B5FF"/>
+              <path d="M340 135 L340 95 C360 90, 380 110, 400 120 L400 160 Z" fill="#B39DDB"/>
+              <rect x="220" y="180" width="80" height="10" rx="5" fill="#6C63FF" opacity="0.8"/>
+              <rect x="220" y="205" width="110" height="10" rx="5" fill="#FFFFFF" opacity="0.7"/>
+              <rect x="330" y="230" width="100" height="10" rx="5" fill="#FFFFFF" opacity="0.4"/>
+              <circle cx="140" cy="250" r="10" fill="#FFFFFF" opacity="0.7"/>
+              <circle cx="470" cy="220" r="12" fill="#C7BDF9" opacity="0.6"/>
+              <path d="M180 270 Q240 210, 320 260 T470 250" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.3"/>
+            </g>
+          </svg>
+        </div>
       </div>
-    </div>
+    </aside>
+
+    <section class="form-panel">
+      <div class="glass-card" id="glassCard">
+        <div class="logo">
+            <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+          <h1>BIBLIOSENA</h1>
+        </div>
+
+        <div class="forms-wrapper">
+          <form class="form login-form active" id="loginForm" novalidate>
+            <h2>Iniciar sesión</h2>
+            <label>
+              <span>Usuario o correo institucional</span>
+              <input type="text" id="login-username" name="username" placeholder="tu@correo.edu.co" autocomplete="username" required>
+            </label>
+            <label>
+              <span>Contraseña</span>
+              <input type="password" id="login-password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+            </label>
+            <button type="submit" class="primary-btn">Acceder</button>
+            <a class="forgot" href="recuperar.html">¿Olvidaste tu contraseña?</a>
+            <p class="switch">
+              ¿No tienes una cuenta?
+              <button type="button" class="link-btn" id="toRegister">Registrarse</button>
+            </p>
+          </form>
+
+          <form class="form register-form" id="registerForm" novalidate>
+            <h2>Crear cuenta</h2>
+            <div class="form-grid">
+              <label>
+                <span>Nombre completo</span>
+                <input type="text" id="reg-nombre" name="nombre" placeholder="Ingresa tu nombre" required>
+              </label>
+              <label>
+                <span>Tipo de documento</span>
+                <select id="reg-tipo-documento" name="tipo_documento" required>
+                  <option value="">Selecciona una opción</option>
+                  <option value="cedula">Cédula de Ciudadanía</option>
+                  <option value="tarjeta">Tarjeta de Identidad</option>
+                  <option value="extranjera">Cédula de Extranjería</option>
+                  <option value="nit">NIT</option>
+                </select>
+              </label>
+              <label>
+                <span>Número de ficha</span>
+                <input type="text" id="reg-ficha" name="ficha" placeholder="Número de ficha" required>
+              </label>
+              <label>
+                <span>Número de documento</span>
+                <input type="text" id="reg-documento" name="documento" placeholder="Documento" required>
+              </label>
+              <label>
+                <span>Correo institucional</span>
+                <input type="email" id="reg-correo" name="correo" placeholder="tu@correo.edu.co" required>
+              </label>
+              <label>
+                <span>Teléfono de contacto</span>
+                <input type="tel" id="reg-telefono" name="telefono" placeholder="000 000 0000" required>
+              </label>
+              <label>
+                <span>Tipo de usuario</span>
+                <select id="reg-tipo-usuario" name="tipo_usuario" required>
+                  <option value="">Selecciona una opción</option>
+                  <option value="aprendiz">Aprendiz</option>
+                  <option value="instructor">Instructor</option>
+                </select>
+              </label>
+              <label>
+                <span>Usuario</span>
+                <input type="text" id="reg-username" name="username" placeholder="Crea tu usuario" required>
+              </label>
+              <label>
+                <span>Contraseña</span>
+                <input type="password" id="reg-password" name="password" placeholder="Crea una contraseña" required>
+              </label>
+              <label>
+                <span>Confirmar contraseña</span>
+                <input type="password" id="reg-confirm" name="confirm_password" placeholder="Repite la contraseña" required>
+              </label>
+            </div>
+            <label class="terms">
+              <input type="checkbox" id="reg-acepta" name="acepta" required>
+              <span>Acepto los términos y el tratamiento de datos personales</span>
+            </label>
+            <button type="submit" class="primary-btn">Crear cuenta</button>
+            <p class="switch">
+              ¿Ya tienes un usuario?
+              <button type="button" class="link-btn" id="toLogin">Iniciar sesión</button>
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
   </main>
-  <script>
-    const form = document.getElementById('loginForm');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      if (!username || !password) {
-        alert('Por favor completa todos los campos');
-        return;
-      }
-      try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: username, username: username, password: password })
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          localStorage.setItem('token', data.token);
-          if (data.user) {
-            localStorage.setItem('userData', JSON.stringify(data.user));
-            localStorage.setItem('miId', data.user.id || data.user.documento || '');
-          }
-          window.location.href = 'principal.html';
-        } else {
-          alert(data.error || 'Error de autenticación');
-        }
-      } catch (err) {
-        alert('No se pudo iniciar sesión');
-      }
-    });
-  </script>
+
+  <script src="{{ url_for('static', filename='js/bibliosena-login.js') }}"></script>
 </body>
 </html>
+
+
+

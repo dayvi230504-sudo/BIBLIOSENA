@@ -6,94 +6,301 @@
   <title>Mis Préstamos</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
   <style>
-    .prestamo-card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      border-left: 5px solid #2196f3;
+    .loan-hero {
+      background: linear-gradient(135deg, #4c6ef5, #9061f9);
+      color: #fff;
+      padding: 28px 32px;
+      border-radius: 24px;
+      box-shadow: 0 18px 36px rgba(76, 110, 245, 0.25);
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
     }
-    .prestamo-card.vencido {
-      border-left-color: #f44336;
-      background: #ffebee;
+    .loan-hero::after {
+      content: "";
+      position: absolute;
+      inset: -60px auto auto -40px;
+      width: 220px;
+      height: 220px;
+      background: rgba(255,255,255,0.12);
+      filter: blur(0);
+      border-radius: 999px;
     }
-    .prestamo-card.proximo {
-      border-left-color: #ff9800;
-      background: #fff3e0;
+    .loan-hero h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
     }
-    .prestamo-card.normal {
-      border-left-color: #4caf50;
-      background: #f1f8f4;
+    .loan-hero p {
+      margin: 12px 0 0 0;
+      font-size: 16px;
+      max-width: 640px;
+      opacity: 0.85;
     }
-    .sancion-alert {
-      background: #fff3cd;
-      border: 2px solid #ffc107;
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 12px;
-      font-weight: 600;
-      color: #856404;
-    }
-    .info-grid {
+    .loan-summary {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      margin-top: 24px;
+    }
+    .loan-summary__item {
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 16px;
+      text-align: left;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .loan-summary__label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.8;
+    }
+    .loan-summary__value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .loan-section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 12px;
-      margin-top: 12px;
+      margin: 0 0 16px 0;
+      color: #223250;
     }
-    .info-item {
-      padding: 8px;
-      background: rgba(255,255,255,0.7);
-      border-radius: 6px;
+    .loan-section-title h3 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .loan-list {
+      display: grid;
+      gap: 20px;
+    }
+    .loan-card {
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1px solid rgba(102,126,234,0.12);
+      box-shadow: 0 18px 36px rgba(15,37,77,0.08);
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .loan-card::before {
+      content: "";
+      position: absolute;
+      inset:0;
+      background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.08));
+      pointer-events: none;
+    }
+    .loan-card > * {
+      position: relative;
+      z-index: 1;
+    }
+    .loan-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .loan-card__title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1c2751;
+    }
+    .loan-card__tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .loan-tag {
+      background: rgba(102,126,234,0.18);
+      color: #4059ad;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .loan-card__status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .loan-card__status--ok {
+      background: rgba(76,175,80,0.18);
+      color: #1b5e20;
+    }
+    .loan-card__status--warning {
+      background: rgba(255,152,0,0.2);
+      color: #8d4b00;
+    }
+    .loan-card__status--alert {
+      background: rgba(244,67,54,0.22);
+      color: #b71c1c;
+    }
+    .loan-card__grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .loan-info {
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(102,126,234,0.14);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 12px 26px rgba(15,37,77,0.06);
+    }
+    .loan-info strong {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #42526e;
+    }
+    .loan-info span {
+      font-size: 15px;
+      color: #1c2751;
+      font-weight: 600;
+    }
+    .loan-card__progress {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .loan-progress-bar {
+      position: relative;
+      flex: 1 1 220px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(102,126,234,0.18);
+      overflow: hidden;
+    }
+    .loan-progress-bar div {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #42a5f5, #7b61ff);
+    }
+    .loan-progress-label {
       font-size: 14px;
+      font-weight: 600;
+      color: #233050;
     }
-    .info-item strong {
-      display: block;
-      color: #667eea;
-      margin-bottom: 4px;
+    .loan-state-alert {
+      background: rgba(255,244,229,0.9);
+      border: 1px solid rgba(255,152,0,0.35);
+      border-radius: 16px;
+      padding: 14px;
+      font-weight: 600;
+      color: #8d4b00;
+    }
+    .loan-state-alert.critical {
+      background: rgba(255,235,238,0.9);
+      border-color: rgba(244,67,54,0.35);
+      color: #b71c1c;
+    }
+    .sanction-list {
+      display: grid;
+      gap: 16px;
+    }
+    .sanction-card {
+      background: #fff7f4;
+      border-radius: 18px;
+      border: 1px solid rgba(255,138,101,0.35);
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(255,138,101,0.18);
+    }
+    .sanction-card h4 {
+      margin: 0 0 8px 0;
+      color: #d84315;
+    }
+    .sanction-card__meta {
+      font-size: 13px;
+      color: #784421;
+      margin-top: 6px;
+    }
+    @media (max-width: 768px) {
+      .loan-hero {
+        border-radius: 18px;
+        padding: 24px;
+      }
+      .loan-card {
+        padding: 20px;
+      }
+      .loan-card__header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .loan-progress-bar {
+        flex: 1 1 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <header class="encabezado">
-    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
-    <h2 style="margin-left:16px; flex:1;">📚 Mis Préstamos</h2>
-    <button onclick="location.href='principal.html'" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">← Inicio</button>
-  </header>
+  {% set active_page = 'mis_prestamos' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarPrestamos' %}
+  {% include 'includes/topbar.html' %}
 
   <main class="content">
-    <div style="background:linear-gradient(135deg, #667eea, #764ba2); padding:20px; border-radius:12px; margin-bottom:24px; color:white;">
-      <h3 style="margin-top:0; color:white;">📋 Resumen de Préstamos</h3>
-      <div id="resumenPrestamos" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-top:16px;">
-        <div style="background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; text-align:center;">
-          <div style="font-size:24px; font-weight:bold;" id="totalPrestamos">0</div>
-          <div style="font-size:12px; opacity:0.9;">Total</div>
+    <section class="loan-hero">
+      <h1>📋 Resumen de préstamos</h1>
+      <p>Consulta el estado de tus solicitudes, conoce los próximos vencimientos y mantén al día tus devoluciones para evitar sanciones.</p>
+      <div id="resumenPrestamos" class="loan-summary">
+        <div class="loan-summary__item">
+          <span class="loan-summary__label">Total registrados</span>
+          <div class="loan-summary__value" id="totalPrestamos">0</div>
         </div>
-        <div style="background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; text-align:center;">
-          <div style="font-size:24px; font-weight:bold;" id="activosPrestamos">0</div>
-          <div style="font-size:12px; opacity:0.9;">Activos</div>
+        <div class="loan-summary__item">
+          <span class="loan-summary__label">Activos</span>
+          <div class="loan-summary__value" id="activosPrestamos">0</div>
         </div>
-        <div style="background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; text-align:center;">
-          <div style="font-size:24px; font-weight:bold;" id="vencidosPrestamos">0</div>
-          <div style="font-size:12px; opacity:0.9;">Vencidos</div>
+        <div class="loan-summary__item">
+          <span class="loan-summary__label">Vencidos</span>
+          <div class="loan-summary__value" id="vencidosPrestamos">0</div>
         </div>
-        <div style="background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; text-align:center;">
-          <div style="font-size:24px; font-weight:bold;" id="sancionesPrestamos">0</div>
-          <div style="font-size:12px; opacity:0.9;">Sanciones</div>
+        <div class="loan-summary__item">
+          <span class="loan-summary__label">Sanciones</span>
+          <div class="loan-summary__value" id="sancionesPrestamos">0</div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div>
-      <h3>📖 Mis Elementos Prestados</h3>
-      <button onclick="cargarMisPrestamos()" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-bottom:16px;">🔄 Actualizar</button>
-      <div id="listaPrestamos"></div>
+    <section>
+      <div class="loan-section-title">
+        <h3>📖 Mis elementos prestados</h3>
+        <button onclick="cargarMisPrestamos()" style="border:none; background:linear-gradient(135deg,#42a5f5,#7b61ff); color:#fff; padding:10px 18px; border-radius:999px; box-shadow:0 12px 28px rgba(66,165,245,0.25); cursor:pointer;">🔄 Actualizar listado</button>
     </div>
+      <div id="listaPrestamos" class="loan-list"></div>
+    </section>
 
-    <div style="margin-top:32px;">
-      <h3>⚠️ Mis Sanciones</h3>
-      <div id="listaSanciones"></div>
+    <section style="margin-top:40px;">
+      <div class="loan-section-title">
+        <h3>⚠️ Mis sanciones</h3>
     </div>
+      <div id="listaSanciones" class="sanction-list"></div>
+    </section>
   </main>
 
   <script>
@@ -195,9 +402,6 @@
           console.error('Error cargando préstamos:', e);
         }
         
-        console.log('ID usuario:', miId);
-        console.log('Préstamos cargados:', prestamos);
-        
         // Cargar sanciones (por ahora vacío hasta implementar)
         const sanciones = []; // TODO: Implementar endpoint de sanciones
         
@@ -214,89 +418,137 @@
         document.getElementById('sancionesPrestamos').textContent = sanciones.length;
         
         if (prestamos.length === 0) {
-          lista.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No tienes préstamos registrados.</div>';
+          lista.innerHTML = '<div class="loan-state-alert" style="background:#f5f9ff; border-color:rgba(102,126,234,0.25); color:#1c2751;">Aún no tienes préstamos registrados. Explora la biblioteca y solicita tu primer recurso.</div>';
           return;
         }
         
         // Cargar información de los elementos
         let html = '';
         for (const prestamo of prestamos) {
-          // Usar datos del elemento desde la respuesta o buscar
           let libro = prestamo.elemento || null;
           if (!libro) {
             const resLibro = await fetch(`/api/libros/${prestamo.id_elemento}`).catch(() => null);
             libro = resLibro && resLibro.ok ? await resLibro.json().catch(() => null) : null;
           }
           
-          const fechaPrestamo = new Date(prestamo.fecha_prestamo);
-          const fechaLimite = calcularFechaLimite(prestamo.fecha_prestamo);
-          const vencido = estaVencido(fechaLimite);
-          const diasRest = diasRestantes(fechaLimite);
-          
-          let clase = 'normal';
+          const fechaPrestamo = prestamo.fecha_prestamo ? new Date(prestamo.fecha_prestamo) : null;
+          const fechaSolicitud = prestamo.creado_en ? new Date(prestamo.creado_en) : fechaPrestamo;
+          const fechaLimite = prestamo.estado === 'aprobado' && prestamo.fecha_prestamo
+            ? calcularFechaLimite(prestamo.fecha_prestamo)
+            : null;
+          const vencido = fechaLimite ? estaVencido(fechaLimite) : false;
+          const diasRest = fechaLimite ? diasRestantes(fechaLimite) : 0;
+          const msPorDia = 1000 * 60 * 60 * 24;
+          const totalDiasPrestamo = fechaPrestamo && fechaLimite
+            ? Math.max(1, Math.ceil((fechaLimite - fechaPrestamo) / msPorDia))
+            : 1;
+          const avancePorcentaje = fechaLimite
+            ? Math.min(100, Math.max(0, Math.round(((totalDiasPrestamo - Math.max(diasRest, 0)) / totalDiasPrestamo) * 100)))
+            : 0;
+
+          const tituloElemento = libro ? (libro.titulo || libro.categoria || 'Recurso') : prestamo.id_elemento.substring(0, 12) + '...';
+          const categoria = libro?.categoria || 'Sin categoría';
+          const subcategoria = libro?.subcategoria || '';
+          const codigoInv = libro?.codigo_inventario || prestamo.id_elemento.substring(0, 8) + '...';
+
+          const estadoTexto = {
+            pendiente: 'Pendiente de aprobación',
+            aprobado: 'Aprobado',
+            rechazado: 'Rechazado',
+            devuelto: 'Devuelto'
+          }[prestamo.estado] || prestamo.estado;
+
+          let statusClass = 'loan-card__status--ok';
+          let statusBadge = `✅ ${estadoTexto}`;
+
           if (prestamo.estado === 'aprobado') {
             if (vencido) {
-              clase = 'vencido';
+              statusClass = 'loan-card__status--alert';
+              statusBadge = `⚠️ Préstamo vencido`;
             } else if (diasRest <= 2) {
-              clase = 'proximo';
+              statusClass = 'loan-card__status--warning';
+              statusBadge = `⏰ Próximo a vencer`;
+            } else {
+              statusBadge = `📚 En curso`;
             }
+          } else if (prestamo.estado === 'pendiente') {
+            statusClass = 'loan-card__status--warning';
+            statusBadge = `⏳ Pendiente de aprobación`;
+          } else if (prestamo.estado === 'rechazado') {
+            statusClass = 'loan-card__status--alert';
+            statusBadge = `❌ Solicitud rechazada`;
+          } else if (prestamo.estado === 'devuelto') {
+            statusClass = 'loan-card__status--ok';
+            statusBadge = `📥 Devuelto`;
           }
-          
-          const estadoTexto = {
-            'pendiente': '⏳ Pendiente de aprobación',
-            'aprobado': '✅ Aprobado',
-            'rechazado': '❌ Rechazado',
-            'devuelto': '📥 Devuelto'
-          }[prestamo.estado] || prestamo.estado;
-          
-          html += `<div class="prestamo-card ${clase}">
-            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-              <div>
-                <h4 style="margin:0 0 8px 0; color:#333;">${libro ? (libro.titulo || libro.categoria || 'Elemento') : prestamo.id_elemento.substring(0, 12) + '...'}</h4>
-                <div style="font-size:14px; color:#666;">Estado: ${estadoTexto}</div>
+
+          const badges = [
+            categoria,
+            subcategoria || null,
+            codigoInv ? `Código: ${codigoInv}` : null
+          ].filter(Boolean).map(tag => `<span class="loan-tag">${tag}</span>`).join('');
+
+          let progressBlock = '';
+          let alertBlock = '';
+
+          if (prestamo.estado === 'aprobado') {
+            const label = vencido
+              ? `Con ${Math.abs(diasRest)} día(s) de retraso`
+              : `Faltan ${diasRest} día(s) para la devolución`;
+            progressBlock = `
+              <div class="loan-card__progress">
+                <div class="loan-progress-bar"><div style="width:${avancePorcentaje}%;"></div></div>
+                <span class="loan-progress-label">${label}</span>
               </div>
-              <div style="text-align:right; font-size:12px; color:#999;">
-                ${prestamo.creado_en ? new Date(prestamo.creado_en).toLocaleDateString('es-ES') : ''}
+            `;
+            if (vencido) {
+              alertBlock = `<div class="loan-state-alert critical">⚠️ Este préstamo ya superó la fecha límite. Devuélvelo cuanto antes para evitar sanciones.</div>`;
+            } else if (diasRest <= 2) {
+              alertBlock = `<div class="loan-state-alert">⏰ Recuerda devolver el recurso dentro de los próximos ${diasRest} día(s) para mantener tu historial limpio.</div>`;
+            }
+          } else if (prestamo.estado === 'pendiente') {
+            progressBlock = `<div class="loan-card__progress"><span class="loan-progress-label">Esperando confirmación del administrador.</span></div>`;
+          }
+
+          const observaciones = prestamo.observaciones
+            ? `<div class="loan-state-alert" style="background:#f5f5f5; border-color:rgba(102,126,234,0.25); color:#223250;">📝 ${prestamo.observaciones}</div>`
+            : '';
+
+          html += `
+            <article class="loan-card">
+              <div class="loan-card__header">
+              <div>
+                  <h4 class="loan-card__title">${tituloElemento}</h4>
+                  <div class="loan-card__tags">
+                    ${badges || '<span class="loan-tag">Sin metadatos</span>'}
               </div>
             </div>
-            ${libro ? `
-              <div style="background:rgba(255,255,255,0.6); padding:12px; border-radius:8px; margin-bottom:12px;">
-                <div><strong>📖 Autor:</strong> ${libro.autor || 'N/A'}</div>
-                <div><strong>🏷️ Categoría:</strong> ${libro.categoria || 'N/A'}</div>
-                ${libro.codigo_inventario ? `<div><strong>🔢 Código:</strong> ${libro.codigo_inventario}</div>` : ''}
+                <span class="loan-card__status ${statusClass}">${statusBadge}</span>
               </div>
-            ` : ''}
-            ${prestamo.estado === 'aprobado' ? `
-              <div class="info-grid">
-                <div class="info-item">
-                  <strong>📅 Fecha de préstamo</strong>
-                  ${fechaPrestamo.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              <div class="loan-card__grid">
+                <div class="loan-info">
+                  <strong>📅 Fecha de solicitud</strong>
+                  <span>${fechaSolicitud ? fechaSolicitud.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Sin registro'}</span>
                 </div>
-                <div class="info-item ${vencido ? 'vencido' : ''}">
+                <div class="loan-info">
                   <strong>⏰ Fecha límite</strong>
-                  ${fechaLimite.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  <span>${fechaLimite ? fechaLimite.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Por confirmar'}</span>
                 </div>
-                <div class="info-item ${vencido ? 'vencido' : (diasRest <= 2 ? 'proximo' : '')}">
-                  <strong>${vencido ? '⚠️ Días vencidos' : '⏳ Días restantes'}</strong>
-                  ${vencido ? Math.abs(diasRest) + ' días' : diasRest + ' días'}
+                <div class="loan-info">
+                  <strong>📌 Estado actual</strong>
+                  <span>${estadoTexto}</span>
                 </div>
+                ${libro?.autor ? `
+                  <div class="loan-info">
+                    <strong>👤 Autor / Responsable</strong>
+                    <span>${libro.autor}</span>
+                  </div>` : ''}
               </div>
-              ${vencido ? `
-                <div class="sancion-alert">
-                  ⚠️ Este préstamo está VENCIDO. Por favor devuélvelo lo antes posible para evitar sanciones.
-                </div>
-              ` : diasRest <= 2 ? `
-                <div style="background:#fff3cd; border:2px solid #ffc107; padding:12px; border-radius:8px; margin-top:12px; color:#856404;">
-                  ⏰ Este préstamo vence pronto (${diasRest} día(s)). Recuerda devolverlo a tiempo.
-                </div>
-              ` : ''}
-            ` : ''}
-            ${prestamo.observaciones ? `
-              <div style="margin-top:12px; padding:8px; background:#f5f5f5; border-radius:6px; font-size:13px;">
-                <strong>📝 Observaciones:</strong> ${prestamo.observaciones}
-              </div>
-            ` : ''}
-          </div>`;
+              ${progressBlock}
+              ${alertBlock}
+              ${observaciones}
+            </article>
+          `;
         }
         
         lista.innerHTML = html;
@@ -312,35 +564,25 @@
     async function cargarSanciones(sanciones) {
       const lista = document.getElementById('listaSanciones');
       if (!sanciones || sanciones.length === 0) {
-        lista.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No tienes sanciones activas.</div>';
+        lista.innerHTML = '<div class="loan-state-alert" style="background:#f5f9ff; border-color:rgba(102,126,234,0.25); color:#1c2751;">No tienes sanciones activas. ¡Sigue así!</div>';
         return;
       }
       
       let html = '';
       for (const sancion of sanciones) {
-        const activa = sancion.estado === 'activa';
-        html += `<div class="prestamo-card ${activa ? 'vencido' : 'normal'}" style="border-left-color:${activa ? '#f44336' : '#757575'};">
-          <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div>
-              <h4 style="margin:0 0 8px 0;">${sancion.tipo_sancion || 'Sanción'}</h4>
-              <div style="font-size:14px; color:#666;">Causa: ${sancion.causa_sancion || 'N/A'}</div>
-              <div style="font-size:14px; color:#666; margin-top:4px;">Estado: <strong style="color:${activa ? '#f44336' : '#757575'}">${sancion.estado || 'N/A'}</strong></div>
+        const activa = (sancion.estado || '').toLowerCase() === 'activa';
+        html += `
+          <article class="sanction-card">
+            <h4>${sancion.tipo_sancion || 'Sanción'}</h4>
+            <div class="sanction-card__meta">
+              <strong>Estado:</strong> ${sancion.estado || 'N/A'}${activa ? ' · Vigente' : ''}
             </div>
-            <div style="text-align:right; font-size:12px; color:#999;">
-              ${sancion.fecha_inicio ? new Date(sancion.fecha_inicio).toLocaleDateString('es-ES') : ''}
-            </div>
-          </div>
-          ${sancion.fecha_fin ? `
-            <div style="margin-top:12px; padding:8px; background:#fff3cd; border-radius:6px;">
-              <strong>📅 Válida hasta:</strong> ${new Date(sancion.fecha_fin).toLocaleDateString('es-ES')}
-            </div>
-          ` : ''}
-          ${sancion.descripcion ? `
-            <div style="margin-top:8px; padding:8px; background:#f5f5f5; border-radius:6px; font-size:13px;">
-              ${sancion.descripcion}
-            </div>
-          ` : ''}
-        </div>`;
+            ${sancion.causa_sancion ? `<div class="sanction-card__meta"><strong>Causa:</strong> ${sancion.causa_sancion}</div>` : ''}
+            ${sancion.fecha_inicio ? `<div class="sanction-card__meta"><strong>Desde:</strong> ${new Date(sancion.fecha_inicio).toLocaleDateString('es-ES')}</div>` : ''}
+            ${sancion.fecha_fin ? `<div class="sanction-card__meta"><strong>Hasta:</strong> ${new Date(sancion.fecha_fin).toLocaleDateString('es-ES')}</div>` : ''}
+            ${sancion.descripcion ? `<p style="margin-top:12px; color:#5f4339;">${sancion.descripcion}</p>` : ''}
+          </article>
+        `;
       }
       lista.innerHTML = html;
     }
@@ -351,6 +593,7 @@
       // Auto-refresh cada 30 segundos
       setInterval(cargarMisPrestamos, 30000);
     }
+    window.initializeTopbar && window.initializeTopbar();
   </script>
 </body>
 </html>

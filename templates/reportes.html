@@ -39,14 +39,14 @@
   </style>
 </head>
 <body>
-  <header class="encabezado">
-    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
-    <h2 style="margin-left:16px; flex:1;">Reportes</h2>
-    <button onclick="location.href='admin.html'" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-right:10px;">← Volver al Admin</button>
-    <button onclick="location.href='principal.html'" style="background:#667eea; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">Inicio</button>
-  </header>
+  {% set active_page = 'admin' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarReportes' %}
+  {% include 'includes/topbar.html' %}
 
   <main class="content">
+    <h1 class="page-title">📊 Reportes</h1>
     <div class="reporte-section">
       <h3>Reporte General</h3>
       <div class="filtros">

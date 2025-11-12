@@ -1,0 +1,74 @@
+{% set active_page = active_page|default('') %}
+{% set nav_context = nav_context|default('general') %}
+{% set search_placeholder = search_placeholder|default('Buscar en la biblioteca...') %}
+{% set search_button_id = search_button_id|default('btnBuscar') %}
+{% set nav_show_categories = nav_show_categories|default(False) %}
+{% set nav_categories = nav_categories|default([
+  ('', 'Todas'),
+  ('Libros', '📚 Libros'),
+  ('Equipos Informáticos', '💻 Equipos'),
+  ('Ciencia', '🔬 Ciencia'),
+  ('Historia', '📜 Historia'),
+  ('Tecnología', '💡 Tecnología'),
+  ('Literatura', '✍️ Literatura')
+]) %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/topbar.css') }}">
+
+<header class="encabezado topbar">
+  <a href="principal.html" class="logo-link" aria-label="Volver al inicio">
+    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
+  </a>
+  <div class="buscador">
+    <input type="text" id="buscadorInput" placeholder="{{ search_placeholder }}">
+    <button id="{{ search_button_id }}" aria-label="Buscar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" fill="none">
+        <path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+  <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <div class="usuario" id="usuarioContainer" aria-haspopup="true" aria-expanded="false">
+    <span id="nombreUsuario">Usuario</span>
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
+    <div class="usuario-menu" id="usuarioMenu" style="display:none;">
+      <a href="#" id="linkFavoritos">❤️ Mis Favoritos</a>
+      <a href="#" id="linkPerfil">👤 Ver Perfil</a>
+      <a href="#" id="linkCerrarSesion">🚪 Cerrar Sesión</a>
+    </div>
+  </div>
+</header>
+
+<nav class="menu menu--global" data-context="{{ nav_context }}">
+  <a href="principal.html" class="{{ 'is-active' if active_page == 'inicio' else '' }}">🏠 Inicio</a>
+  <a href="libros.html" id="navLibros" class="{{ 'is-active' if active_page == 'libros' else '' }}">📚 Libros</a>
+  <a href="equipos.html" id="navEquipos" class="{{ 'is-active' if active_page == 'equipos' else '' }}">💻 Equipos</a>
+  <a href="prestamo.html" id="navPrestamo" class="{{ 'is-active' if active_page == 'prestamo' else '' }}">📝 Préstamos</a>
+  <a id="linkMisPrestamos" href="mis_prestamos.html" class="{{ 'is-active' if active_page == 'mis_prestamos' else '' }}" style="display:none;">📋 Mis Préstamos</a>
+  <a id="linkMensajes" href="mensajes.html" class="{{ 'is-active' if active_page == 'mensajes' else '' }}" style="display:none;">💬 Chat</a>
+  <a id="linkFavoritosMenu" href="favoritos.html" class="{{ 'is-active' if active_page == 'favoritos' else '' }}" style="display:none;">❤️ Favoritos</a>
+  <a href="https://www.sena.edu.co/es-co/Paginas/default.aspx" target="_blank" rel="noopener">📰 Novedades</a>
+
+  {% if nav_show_categories and nav_categories %}
+  <div class="dropdown" data-context="{{ nav_context }}">
+    <button class="dropdown__toggle" id="catToggle">Categorías</button>
+    <div class="dropdown__menu" id="catMenu">
+      {% for value, label in nav_categories %}
+      <a href="#" onclick="filtrarPorCategoria('{{ value }}'); return false;">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="menu__spacer"></div>
+  <a id="adminLink" href="admin.html" class="{{ 'is-active' if active_page == 'admin' else '' }}" style="display:none;">⚙️ Admin</a>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" aria-hidden="true"></div>
+
+<script src="/static/js/topbar.js" defer></script>
+

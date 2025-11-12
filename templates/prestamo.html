@@ -3,123 +3,305 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solicitar Préstamo</title>
+  <title>Solicitar préstamo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/prestamo.css') }}">
 </head>
-<body>
-  <div style="margin:20px;">
-    <button onclick="location.href='principal.html'" style="background:#757575; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; margin-bottom:15px;">← Volver al Inicio</button>
+<body class="with-topbar" style="margin:0; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+  {% set active_page = 'prestamo' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarPrestamo' %}
+  {% include 'includes/topbar.html' %}
+  <main class="content" style="padding-top:32px;">
+  <div style="max-width:880px; margin:0 auto 50px; padding:0 24px;">
+    <div class="form-card">
+      <div class="form-card__header" style="margin-bottom:12px;">
+        <div>
+          <h1 class="form-card__title">Solicitar préstamo</h1>
+          <p class="form-card__subtitle">Selecciona el tipo de recurso y el sistema calculará automáticamente la fecha de devolución según tu rol.</p>
   </div>
-  <div class="container">
-    <h2>Solicitar Préstamo</h2>
-    <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #ffc107;">
-      <strong>💡 Ayuda:</strong> 
-      <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-        <li>Para encontrar el ID de un libro, ve a la página principal y haz clic en un libro. El ID aparecerá en la URL (ej: detalle_libro.html?id=ABC123)</li>
-        <li>Si eres un usuario registrado, puedes usar tu documento como ID de usuario</li>
-        <li>Los préstamos de libros no requieren documento, pero los equipos sí</li>
-      </ul>
-    </div>
-    
-    <form id="prestamoForm">
-      <div class="form-group">
-        <label for="id_elemento">ID del Elemento (Libro o Equipo): *</label>
-        <input type="text" id="id_elemento" name="id_elemento" placeholder="Pega el ID del elemento aquí" required>
-        <small style="color: #666; font-size: 12px;">Ejemplo: abc123-def456-ghi789</small>
+        <button class="btn-ghost" onclick="location.href='principal.html'">← Volver al inicio</button>
       </div>
 
-      <div class="form-group">
-        <label for="id_usuario">Documento de Usuario (solo para equipos):</label>
-        <input type="text" id="id_usuario" name="id_usuario" placeholder="Opcional para libros, requerido para equipos">
-        <small style="color: #666; font-size: 12px;">Deja vacío si es un libro</small>
+      <div class="alert-banner" id="rolResumen">
+        <div>
+          <strong>Identificación de usuario</strong>
+          Inicia sesión para que podamos aplicar tus cupos y plazos personalizados.
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="fecha_prestamo">Fecha de Préstamo:</label>
-        <input type="date" id="fecha_prestamo" name="fecha_prestamo" required>
+      <form id="prestamoForm" class="modern-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="tipo_recurso">Tipo de recurso<span class="required">*</span></label>
+            <select id="tipo_recurso" name="tipo_recurso" required>
+              <option value="libro">Libro</option>
+              <option value="portatil">Portátil</option>
+            </select>
+            <small>Las reglas de préstamo cambian según el recurso.</small>
+          </div>
+          <div class="form-field">
+            <label for="identificador">Código de barras / Código interno<span class="required">*</span></label>
+            <input type="text" id="identificador" name="identificador" required placeholder="Escanea o escribe el identificador del recurso">
+            <small>Ejemplo libro: 978958XXXXXX — Ejemplo portátil: PTL-045</small>
+          </div>
+          <div class="form-field" id="campoDocumento">
+            <label for="documentoUsuario">Documento del usuario<span class="required">*</span></label>
+            <input type="text" id="documentoUsuario" name="documentoUsuario" required placeholder="Documento de quien recibe el portátil">
+            <small>Obligatorio para portátiles y visitantes.</small>
+          </div>
       </div>
 
-      <div class="form-group">
-        <label for="fecha_devolucion">Fecha de Devolución Esperada:</label>
-        <input type="date" id="fecha_devolucion" name="fecha_devolucion" required>
+        <div class="form-grid" style="margin-top:20px;">
+          <div class="form-field">
+            <label>Fecha de préstamo</label>
+            <input type="text" id="fechaPrestamoTexto" readonly>
+          </div>
+          <div class="form-field">
+            <label>Fecha de devolución prevista</label>
+            <input type="text" id="fechaDevolucionTexto" readonly>
+            <small id="diasPrestamoHelper"></small>
+          </div>
+          <div class="form-field">
+            <label>Cupo disponible</label>
+            <input type="text" id="cupoDisponibleTexto" readonly>
+          </div>
       </div>
 
-      <div class="form-group">
-        <label for="observaciones">Observaciones:</label>
-        <textarea id="observaciones" name="observaciones" rows="3" placeholder="Cualquier información adicional..."></textarea>
+        <div id="accesoriosAdmin" style="display:none; margin-top:24px;">
+          <h3 class="form-section-title">Accesorios asociados (solo administrador)</h3>
+          <div class="accessory-grid">
+            <label class="accessory-card">
+              <input type="checkbox" name="accesorios" value="Cargador">
+              <span>Cargador</span>
+            </label>
+            <label class="accessory-card">
+              <input type="checkbox" name="accesorios" value="Mousepad">
+              <span>Mousepad</span>
+            </label>
+            <label class="accessory-card">
+              <input type="checkbox" name="accesorios" value="Mouse">
+              <span>Mouse</span>
+            </label>
+            <label class="accessory-card">
+              <input type="checkbox" name="accesorios" value="Guaya de seguridad">
+              <span>Guaya de seguridad</span>
+            </label>
+            <label class="accessory-card">
+              <input type="checkbox" name="accesorios" value="Morral">
+              <span>Morral</span>
+            </label>
+            <label class="accessory-card">
+              <input type="checkbox" name="accesorios" value="Tarjeta micro SD">
+              <span>Tarjeta micro SD</span>
+            </label>
+          </div>
       </div>
 
-      <button type="submit">Solicitar Préstamo</button>
+        <div class="form-actions" style="margin-top:28px;">
+          <button type="reset" class="btn-ghost">Limpiar</button>
+          <button type="submit" class="btn-primary">Enviar solicitud</button>
+        </div>
     </form>
 
-    <div id="resultado" style="margin-top: 16px;"></div>
+      <div id="resultado" style="margin-top:18px;"></div>
+    </div>
   </div>
-
   <script>
-    // Establecer fecha de hoy como predeterminada
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('fecha_prestamo').value = today;
-    
-    // Establecer fecha de devolución en 30 días
-    const devolucionDate = new Date();
-    devolucionDate.setDate(devolucionDate.getDate() + 30);
-    document.getElementById('fecha_devolucion').value = devolucionDate.toISOString().split('T')[0];
+    const reglasPrestamo = {
+      aprendiz: { libro: { max: 5, dias: 15 }, portatil: { max: 1, dias: 1 } },
+      instructor: { libro: { max: 10, dias: 30 }, portatil: { max: 10, dias: 15 } },
+      administrativo: { libro: { max: 10, dias: 30 }, portatil: { max: 10, dias: 15 } },
+      funcionario: { libro: { max: 10, dias: 30 }, portatil: { max: 10, dias: 15 } },
+      visitante: { libro: { max: 2, dias: 7 }, portatil: { max: 1, dias: 1 } },
+      admin: { libro: { max: 99, dias: 60 }, portatil: { max: 99, dias: 30 } }
+    };
 
-    // Obtener ID del elemento de la URL si viene desde detalle_libro.html
-    const urlParams = new URLSearchParams(window.location.search);
-    const elementoId = urlParams.get('elemento');
-    if (elementoId) {
-      document.getElementById('id_elemento').value = elementoId;
+    const prestamoForm = document.getElementById('prestamoForm');
+    const tipoRecursoSelect = document.getElementById('tipo_recurso');
+    const campoDocumento = document.getElementById('campoDocumento');
+    const fechaPrestamoTexto = document.getElementById('fechaPrestamoTexto');
+    const fechaDevolucionTexto = document.getElementById('fechaDevolucionTexto');
+    const diasPrestamoHelper = document.getElementById('diasPrestamoHelper');
+    const cupoDisponibleTexto = document.getElementById('cupoDisponibleTexto');
+    const resultadoDiv = document.getElementById('resultado');
+    const accesoriosAdmin = document.getElementById('accesoriosAdmin');
+    const rolResumen = document.getElementById('rolResumen');
+
+    const hoy = new Date();
+    const hoyISO = hoy.toISOString().split('T')[0];
+    let fechaDevolucionISO = hoyISO;
+    fechaPrestamoTexto.value = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(hoy);
+
+    let usuarioActual = {
+      rol: 'visitante',
+      cupos: { libro: 2, portatil: 1 },
+      dias: { libro: 7, portatil: 1 },
+      esAdmin: false
+    };
+
+    async function cargarUsuarioActual() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        actualizarResumen();
+        return;
+      }
+      if (token === 'admin-token') {
+        usuarioActual = {
+          rol: 'admin',
+          cupos: reglasPrestamo.admin,
+          dias: reglasPrestamo.admin,
+          esAdmin: true,
+          nombre: 'Administrador'
+        };
+        actualizarResumen();
+        accesoriosAdmin.style.display = 'block';
+        return;
+      }
+      if (token.startsWith('user-')) {
+        try {
+          const userId = token.replace('user-', '');
+          const res = await fetch(`/api/usuarios/${userId}`);
+          if (res.ok) {
+            const data = await res.json();
+            const rol = (data.tipo_usuario || 'aprendiz').toLowerCase();
+            const reglas = reglasPrestamo[rol] || reglasPrestamo.visitante;
+            usuarioActual = {
+              rol,
+              nombre: data.nombre,
+              cupos: reglas,
+              dias: reglas,
+              documento: data.documento,
+              esAdmin: false
+            };
+            actualizarResumen();
+            if (rol !== 'visitante') {
+              document.getElementById('documentoUsuario').value = data.documento || '';
+            }
+            return;
+          }
+        } catch (error) {
+          console.warn('No se pudo cargar usuario:', error);
+        }
+      }
+      actualizarResumen();
     }
 
-    document.getElementById('prestamoForm').addEventListener('submit', async (e) => {
+    function actualizarResumen() {
+      const tipo = tipoRecursoSelect.value;
+      const reglas = usuarioActual.dias?.[tipo] ? usuarioActual : {
+        cupos: reglasPrestamo.visitante,
+        dias: reglasPrestamo.visitante,
+        rol: 'visitante'
+      };
+      const dias = reglas.dias[tipo]?.dias || reglas.dias?.[tipo] || 7;
+      const max = reglas.cupos[tipo]?.max || reglas.cupos?.[tipo] || 1;
+      const fechaDevolucion = new Date(hoy);
+      fechaDevolucion.setDate(fechaDevolucion.getDate() + dias);
+      fechaDevolucionISO = fechaDevolucion.toISOString().split('T')[0];
+      fechaDevolucionTexto.value = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(fechaDevolucion);
+      diasPrestamoHelper.textContent = `Plazo asignado: ${dias} día(s) • Máximo permitido: ${max} recurso(s) simultáneos.`;
+      cupoDisponibleTexto.value = `${max} ${tipo === 'libro' ? 'libro(s)' : 'portátil(es)'}`;
+
+      if (usuarioActual.nombre) {
+        rolResumen.innerHTML = `
+          <div>
+            <strong>${usuarioActual.nombre}</strong><br>
+            Rol: ${usuarioActual.rol.charAt(0).toUpperCase() + usuarioActual.rol.slice(1)} • Cupo actual: ${max} ${tipo === 'libro' ? 'libros' : 'portátiles'} • Plazo: ${dias} días
+          </div>`;
+      } else {
+        rolResumen.innerHTML = `
+          <div>
+            <strong>Usuario visitante</strong>
+            Ingresa sesión para ampliar tus cupos. Actualmente puedes solicitar hasta ${max} ${tipo === 'libro' ? 'libros' : 'portátiles'} por ${dias} día(s).
+          </div>`;
+      }
+
+      // Mostrar u ocultar documento obligatorio
+      if (tipo === 'libro' && !usuarioActual.esAdmin && usuarioActual.rol !== 'visitante') {
+        campoDocumento.style.display = 'none';
+        document.getElementById('documentoUsuario').required = false;
+      } else {
+        campoDocumento.style.display = 'block';
+        document.getElementById('documentoUsuario').required = true;
+      }
+    }
+
+    tipoRecursoSelect.addEventListener('change', actualizarResumen);
+
+    prestamoForm.addEventListener('reset', () => {
+      setTimeout(() => {
+        document.getElementById('documentoUsuario').value = usuarioActual.documento || '';
+        actualizarResumen();
+        resultadoDiv.innerHTML = '';
+      }, 0);
+    });
+
+    prestamoForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const resultadoDiv = document.getElementById('resultado');
       resultadoDiv.innerHTML = 'Enviando solicitud...';
       
-      const formData = new FormData(e.target);
-      const data = {
-        id_elemento: formData.get('id_elemento'),
-        id_usuario: formData.get('id_usuario') || null,
-        fecha_prestamo: formData.get('fecha_prestamo'),
-        fecha_devolucion: formData.get('fecha_devolucion'),
-        observaciones: formData.get('observaciones') || ''
+      const tipo = tipoRecursoSelect.value;
+      const identificador = document.getElementById('identificador').value.trim();
+      const documentoUsuario = document.getElementById('documentoUsuario').value.trim();
+      if (!identificador) {
+        resultadoDiv.innerHTML = '<div class="alert-banner" style="background:rgba(231,76,60,0.16); border-color:rgba(231,76,60,0.4); color:#c0392b;">Debes ingresar un identificador del recurso.</div>';
+        return;
+      }
+      if ((tipo === 'portatil' || usuarioActual.rol === 'visitante' || usuarioActual.esAdmin) && !documentoUsuario) {
+        resultadoDiv.innerHTML = '<div class="alert-banner" style="background:rgba(231,76,60,0.16); border-color:rgba(231,76,60,0.4); color:#c0392b;">Debes ingresar el documento del usuario para este recurso.</div>';
+        return;
+      }
+
+      const accesorios = Array.from(document.querySelectorAll('#accesoriosAdmin input[name="accesorios"]:checked')).map(el => el.value);
+
+      const payload = {
+        id_elemento: identificador,
+        id_usuario: documentoUsuario || null,
+        fecha_prestamo: hoyISO,
+        fecha_devolucion: fechaDevolucionISO,
+        tipo_recurso: tipo,
+        accesorios: accesorios.length ? accesorios : null
       };
 
       try {
         const res = await fetch('/prestamos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          body: JSON.stringify(payload)
         });
-        
         const respuesta = await res.json().catch(() => ({}));
         
         if (res.ok && respuesta.ok) {
-          resultadoDiv.innerHTML = '<div style="background: #d4edda; color: #155724; padding: 12px; border-radius: 8px; border: 1px solid #c3e6cb;">✓ Solicitud de préstamo enviada correctamente. Queda pendiente de aprobación por el administrador.</div>';
-          e.target.reset();
-          // Restablecer fechas
-          document.getElementById('fecha_prestamo').value = today;
-          const devolucion = new Date();
-          devolucion.setDate(devolucion.getDate() + 30);
-          document.getElementById('fecha_devolucion').value = devolucion.toISOString().split('T')[0];
-          // Limpiar ID del elemento si venía desde URL
-          const urlParams = new URLSearchParams(window.location.search);
-          if (urlParams.get('elemento')) {
-            document.getElementById('id_elemento').value = '';
-          }
+          resultadoDiv.innerHTML = '<div style="background:#d4edda; color:#155724; padding:12px 16px; border-radius:12px; border:1px solid #c3e6cb;">✅ Solicitud enviada correctamente. El equipo administrativo la revisará en breve.</div>';
+          prestamoForm.reset();
+          accesoriosAdmin.querySelectorAll('input[type="checkbox"]').forEach(chk => chk.checked = false);
+          document.getElementById('identificador').focus();
         } else if (res.status === 202) {
-          // Elemento no disponible - agregado a lista de espera
-          resultadoDiv.innerHTML = `<div style="background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border: 1px solid #ffc107;">⚠️ ${respuesta.error || 'Elemento no disponible'}. Has sido agregado a la lista de espera.</div>`;
+          resultadoDiv.innerHTML = `<div style="background:#fff3cd; color:#856404; padding:12px 16px; border-radius:12px; border:1px solid #ffeeba;">⚠️ ${respuesta.error || 'Elemento no disponible'}. Se añadió a la lista de espera.</div>`;
         } else {
-          const errorMsg = respuesta.error || 'No se pudo procesar la solicitud';
-          resultadoDiv.innerHTML = `<div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; border: 1px solid #f5c6cb;">✗ Error: ${errorMsg}</div>`;
-          console.error('Error en préstamo:', respuesta);
+          resultadoDiv.innerHTML = `<div style="background:#f8d7da; color:#721c24; padding:12px 16px; border-radius:12px; border:1px solid #f5c6cb;">✗ Error: ${respuesta.error || 'No se pudo procesar la solicitud'}</div>`;
         }
       } catch (err) {
-        resultadoDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; border: 1px solid #f5c6cb;">✗ Error de conexión. Por favor, verifica tu conexión e intenta de nuevo.</div>';
+        resultadoDiv.innerHTML = `<div style="background:#f8d7da; color:#721c24; padding:12px 16px; border-radius:12px; border:1px solid #f5c6cb;">✗ Error de conexión: ${err.message}</div>`;
+      } finally {
+        actualizarResumen();
       }
     });
+
+    // Obtener ID de elemento desde la URL (detalle_libro.html?elemento=...)
+    const params = new URLSearchParams(window.location.search);
+    const elementoId = params.get('elemento');
+    if (elementoId) {
+      document.getElementById('identificador').value = elementoId;
+    }
+
+    cargarUsuarioActual().then(actualizarResumen);
   </script>
+  <script>
+    window.initializeTopbar && window.initializeTopbar();
+  </script>
+  </main>
 </body>
 </html>

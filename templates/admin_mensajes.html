@@ -68,14 +68,14 @@
   </style>
 </head>
 <body>
-  <header class="encabezado">
-    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
-    <h2 style="margin-left:16px; flex:1;">💬 Centro de Mensajes - Admin</h2>
-    <a href="admin.html" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; text-decoration:none; margin-right:8px;">← Admin</a>
-    <a href="principal.html" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; text-decoration:none;">Inicio</a>
-  </header>
+  {% set active_page = 'admin' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarMensajesAdmin' %}
+  {% include 'includes/topbar.html' %}
 
   <main class="content">
+    <h1 class="page-title">💬 Centro de Mensajes - Admin</h1>
     <div class="mensajes-container">
       <!-- Panel de mensajes recibidos -->
       <div class="panel-mensajes">

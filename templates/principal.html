@@ -61,78 +61,67 @@
 </head>
 <body>
 
-  <header class="encabezado">
-    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
-    <div class="buscador">
-      <input type="text" id="buscadorInput" placeholder="🤖 Buscar libros... (ej: tecnología, historia, agricultura)">
-      <button id="btnBuscarLibros"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/></svg></button>
-    </div>
-    <div class="usuario" id="usuarioContainer" style="position: relative; cursor: pointer;">
-      <span id="nombreUsuario">Usuario</span>
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
-      <div class="usuario-menu" id="usuarioMenu" style="display: none; position: fixed; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 180px; z-index: 999999; overflow: hidden;">
-        <a href="#" id="linkFavoritos" style="display: block; padding: 12px 20px; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #eee; transition: background 0.2s;">
-          ❤️ Mis Favoritos
-        </a>
-        <a href="#" id="linkPerfil" style="display: block; padding: 12px 20px; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #eee; transition: background 0.2s;">
-          👤 Ver Perfil
-        </a>
-        <a href="#" id="linkCerrarSesion" style="display: block; padding: 12px 20px; color: #e74c3c; text-decoration: none; transition: background 0.2s;">
-          🚪 Cerrar Sesión
-        </a>
-      </div>
-    </div>
-  </header>
-  <nav class="menu">
-    <a href="prestamo.html"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M5 15q-.425 0-.712-.288T4 14v-1H3q-.425 0-.712-.288T2 12t.288-.712T3 11h1v-1q0-.425.288-.712T5 9t.713.288T6 10v1h1q.425 0 .713.288T8 12t-.288.713T7 13H6v1q0 .425-.288.713T5 15m9 6V3h6q.825 0 1.413.588T22 5v14q0 .825-.587 1.413T20 21zm-8 0q-.825 0-1.412-.587T4 19v-1.1q0-.4.3-.663T5 17q2.075 0 3.538-1.45T10 12T8.537 8.45T5 7q-.4 0-.7-.25T4 6.1V5q0-.825.588-1.412T6 3h6v18z"/></svg>
-    <a id="linkLibro" href="libro.html" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 6a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1zm1.5 1.5h7v-1h-7zM4 4.5A2.5 2.5 0 0 1 6.5 2H18a2.5 2.5 0 0 1 2.5 2.5v7.232a6.5 6.5 0 0 0-1.5-.558V4.5a1 1 0 0 0-1-1H6.5a1 1 0 0 0-1 1V18h5.519q.061.782.294 1.5H5.5a1 1 0 0 0 1 1h5.232A6.5 6.5 0 0 0 12.81 22H6.5A2.5 2.5 0 0 1 4 19.5zm19 13a5.5 5.5 0 1 0-11 0a5.5 5.5 0 0 0 11 0m-5 .5l.001 2.503a.5.5 0 1 1-1 0V18h-2.505a.5.5 0 0 1 0-1H17v-2.5a.5.5 0 1 1 1 0V17h2.497a.5.5 0 0 1 0 1z"/></svg></a>
-    <a id="linkMensajes" href="mensajes.html" style="display:none;">💬 Chat</a>
-    <a id="linkMisPrestamos" href="mis_prestamos.html" style="display:none;">📚 Mis Préstamos</a>
-    <a href="https://www.sena.edu.co/es-co/Paginas/noticias" target="_blank" rel="noopener">Novedades (SENA)</a>
-    <a href="libros.html">📚 Libros</a>
-    <a href="equipos.html">💻 Equipos</a>
-    <div class="dropdown" data-context="inicio">
-      <button class="dropdown__toggle" id="catToggle">Categorías</button>
-      <div class="dropdown__menu" id="catMenu">
-        <a href="#" onclick="filtrarPorCategoria('')">Todas</a>
-        <a href="#" onclick="filtrarPorCategoria('Libros')">📚 Libros</a>
-        <a href="#" onclick="filtrarPorCategoria('Equipos Informáticos')">💻 Equipos</a>
-        <a href="#" onclick="filtrarPorCategoria('Ciencia')">🔬 Ciencia</a>
-        <a href="#" onclick="filtrarPorCategoria('Historia')">📜 Historia</a>
-        <a href="#" onclick="filtrarPorCategoria('Tecnología')">💡 Tecnología</a>
-        <a href="#" onclick="filtrarPorCategoria('Literatura')">✍️ Literatura</a>
-      </div>
-    </div>
-    <a id="adminLink" href="admin.html" style="display:none">Admin</a>
-  </nav>
+  {% set active_page = 'inicio' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarPrincipal' %}
+  {% include 'includes/topbar.html' %}
 
   <main class="content">
     <!-- Sección Hero / Presentación -->
     <section class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">📚 Bienvenido a BIBLIOSENA</h1>
-        <p class="hero-subtitle">Tu biblioteca digital del SENA. Descubre, presta y explora un mundo de conocimiento.</p>
-        <div class="hero-stats">
-          <div class="stat-card">
-            <div class="stat-number" id="totalLibros">-</div>
-            <div class="stat-label">📖 Libros Totales</div>
+      <div class="hero-layout">
+        <div class="hero-content">
+          <span class="hero-chip">🚀 Biblioteca inteligente</span>
+          <h1 class="hero-title">Explora, aprende y comparte con <span>BIBLIOSENA</span></h1>
+          <p class="hero-subtitle">Inicia tu búsqueda entre cientos de libros, equipos y recursos creados para potenciar tu formación en el SENA.</p>
+          <div class="hero-actions">
+            <a href="libros.html" class="btn-hero btn-primary">Explorar catálogos</a>
+            <a href="prestamo.html" class="btn-hero btn-secondary">Solicitar préstamo</a>
           </div>
-          <div class="stat-card">
-            <div class="stat-number" id="totalEquipos">-</div>
-            <div class="stat-label">💻 PC Totales</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="librosActivos">-</div>
-            <div class="stat-label">✅ Libros Disponibles</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="equiposActivos">-</div>
-            <div class="stat-label">✅ PC Disponibles</div>
+          <div class="hero-perks">
+            <div class="hero-perk">
+              <span>⚡</span>
+              <div>
+                <strong>Acceso inmediato</strong>
+                <small>Gestión en línea desde cualquier dispositivo</small>
+              </div>
+            </div>
+            <div class="hero-perk">
+              <span>🤖</span>
+              <div>
+                <strong>Asistente inteligente</strong>
+                <small>Encuentra resultados personalizados</small>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="hero-actions">
-          <a href="libros.html" class="btn-hero btn-primary">Explorar Libros</a>
-          <a href="equipos.html" class="btn-hero btn-secondary">Ver Equipos</a>
+        <div class="hero-visual">
+          <div class="hero-card hero-card--stats">
+            <h3>Disponibilidad en tiempo real</h3>
+            <div class="hero-stat-grid">
+              <div>
+                <span id="totalLibros" class="stat-number">-</span>
+                <p>Libros totales</p>
+              </div>
+              <div>
+                <span id="librosActivos" class="stat-number">-</span>
+                <p>Libros disponibles</p>
+              </div>
+              <div>
+                <span id="totalEquipos" class="stat-number">-</span>
+                <p>Equipos totales</p>
+              </div>
+              <div>
+                <span id="equiposActivos" class="stat-number">-</span>
+                <p>Equipos disponibles</p>
+              </div>
+            </div>
+          </div>
+          <div class="hero-card hero-card--quote">
+            <p>“Una biblioteca en línea es una puerta abierta a nuevas oportunidades de aprendizaje.”</p>
+            <small>— Comunidad SENA</small>
+          </div>
         </div>
       </div>
     </section>
@@ -156,7 +145,7 @@
 
     <!-- Sección de Accesos Rápidos -->
     <section class="section-accesos">
-      <h2>🚀 Accesos Rápidos</h2>
+      <h2>🔥 Accesos rápidos</h2>
       <div class="accesos-grid">
         <a href="libros.html" class="acceso-card">
           <div class="acceso-icon">📚</div>
@@ -178,6 +167,25 @@
           <h3>Mis Préstamos</h3>
           <p>Consulta tus préstamos activos</p>
         </a>
+      </div>
+    </section>
+
+    <section class="section-inspiracion">
+      <div class="inspiracion-card">
+        <h2>🌟 Explora por intereses</h2>
+        <p>Selecciona una temática e inicia un viaje de aprendizaje curado para tus proyectos.</p>
+        <div class="inspiracion-tags">
+          <button onclick="filtrarPorCategoria('Tecnología')">#Tecnología</button>
+          <button onclick="filtrarPorCategoria('Emprendimiento')">#Emprendimiento</button>
+          <button onclick="filtrarPorCategoria('Control Ambiental')">#Ambiental</button>
+          <button onclick="filtrarPorCategoria('Diseño')">#Diseño</button>
+          <button onclick="filtrarPorCategoria('Agricultura')">#Agro</button>
+        </div>
+      </div>
+      <div class="inspiracion-card inspiracion-card--light">
+        <h3>¿No sabes por dónde empezar?</h3>
+        <p>Abre el asistente 🤖 y pídele recomendaciones con base en tus metas. Siempre hay algo nuevo por descubrir.</p>
+        <a href="#" onclick="document.getElementById('toggleBot')?.click(); return false;" class="btn-link">Hablar con el asistente</a>
       </div>
     </section>
   </main>
@@ -515,14 +523,15 @@
         return;
       }
       
+      const placeholder = '/static/img/placeholder-book.svg';
       for (const libro of libros) {
-        const imgSrc = libro.imagen ? (libro.imagen.startsWith('uploads/') ? `/${libro.imagen}` : libro.imagen) : '/static/uploads/libro1.jpg';
+        const imgSrc = libro.imagen ? (libro.imagen.startsWith('uploads/') ? `/${libro.imagen}` : libro.imagen) : placeholder;
         const disponible = (libro.cantidad_disponible || 0) > 0;
         const art = document.createElement('article');
         art.className = 'book';
         art.onclick = () => window.location.href = `detalle_libro.html?id=${libro.id}`;
         art.innerHTML = `
-          <div class="book__image"><img src="${imgSrc}" alt="${libro.titulo || ''}"></div>
+        <div class="book__image"><img src="${imgSrc}" alt="${libro.titulo || ''}" onerror="this.src='${placeholder}'"></div>
           ${disponible ? `<div style="position:absolute; top:8px; right:8px; background:#4caf50; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">✅</div>` : ''}
           <div class="book__overlay">
             <h3>${libro.titulo || ''}</h3>
@@ -633,13 +642,14 @@
     track.appendChild(contador);
     
     for (const libro of resultados) {
-      const imgSrc = libro.imagen ? (libro.imagen.startsWith('uploads/') ? `/${libro.imagen}` : libro.imagen) : '/static/uploads/libro1.jpg';
+      const placeholder = '/static/img/placeholder-book.svg';
+      const imgSrc = libro.imagen ? (libro.imagen.startsWith('uploads/') ? `/${libro.imagen}` : libro.imagen) : placeholder;
       const disponible = (libro.cantidad_disponible || 0) > 0;
       const art = document.createElement('article');
       art.className = 'book';
       art.onclick = () => window.location.href = `detalle_libro.html?id=${libro.id}`;
       art.innerHTML = `
-        <div class="book__image"><img src="${imgSrc}" alt="${libro.titulo || ''}"></div>
+        <div class="book__image"><img src="${imgSrc}" alt="${libro.titulo || ''}" onerror="this.src='${placeholder}'"></div>
         <div style="position:absolute; top:8px; right:8px; background:${disponible ? '#4caf50' : '#f44336'}; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">
           ${disponible ? '✅ Disponible' : '❌ Agotado'}
         </div>
@@ -681,143 +691,7 @@
   // Mostrar sugerencias si no hay búsqueda
   setTimeout(mostrarSugerencias, 1000);
 
-  // Mostrar link Admin y agregar libro solo si es admin
-  // Mostrar mensajes para usuarios logueados
-  (function(){
-    const t = localStorage.getItem('token');
-    if (t === 'admin-token') {
-      const l = document.getElementById('adminLink');
-      if (l) l.style.display = 'inline-block';
-      const linkLibro = document.getElementById('linkLibro');
-      if (linkLibro) linkLibro.style.display = 'inline-block';
-    } else if (t && t.startsWith('user-')) {
-      const linkMensajes = document.getElementById('linkMensajes');
-      if (linkMensajes) linkMensajes.style.display = 'inline-block';
-      const linkMisPrestamos = document.getElementById('linkMisPrestamos');
-      if (linkMisPrestamos) linkMisPrestamos.style.display = 'inline-block';
-      const accesoMisPrestamos = document.getElementById('accesoMisPrestamos');
-      if (accesoMisPrestamos) accesoMisPrestamos.style.display = 'block';
-    }
-    
-    // Cargar nombre de usuario
-    async function cargarNombreUsuario() {
-      const token = localStorage.getItem('token');
-      const nombreEl = document.getElementById('nombreUsuario');
-      if (!nombreEl) return;
-      
-      // Intentar desde localStorage
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        try {
-          const user = JSON.parse(userData);
-          if (user.name || user.nombre) {
-            nombreEl.textContent = user.name || user.nombre;
-            return;
-          }
-        } catch (e) {}
-      }
-      
-      // Si hay token, intentar obtener desde API
-      if (token && token.startsWith('user-')) {
-        const userId = token.replace('user-', '');
-        try {
-          const res = await fetch(`/api/usuarios/${userId}`);
-          if (res.ok) {
-            const user = await res.json();
-            if (user.nombre) {
-              nombreEl.textContent = user.nombre;
-              // Guardar en localStorage
-              localStorage.setItem('userData', JSON.stringify({ name: user.nombre, id: user.id }));
-            }
-          }
-        } catch (e) {
-          console.error('Error cargando usuario:', e);
-        }
-      } else if (token === 'admin-token') {
-        nombreEl.textContent = 'Administrador';
-      }
-    }
-    
-    // Configurar menú de usuario
-    function configurarMenuUsuario() {
-      const container = document.getElementById('usuarioContainer');
-      const menu = document.getElementById('usuarioMenu');
-      const linkPerfil = document.getElementById('linkPerfil');
-      const linkCerrar = document.getElementById('linkCerrarSesion');
-      
-      if (!container || !menu) return;
-      
-      // Toggle menú al hacer clic
-      container.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = menu.style.display === 'block';
-        if (isOpen) {
-          menu.style.display = 'none';
-        } else {
-          // Calcular posición del menú
-          const rect = container.getBoundingClientRect();
-          menu.style.display = 'block';
-          menu.style.position = 'fixed';
-          menu.style.top = (rect.bottom + window.scrollY + 10) + 'px';
-          menu.style.right = (window.innerWidth - rect.right) + 'px';
-          menu.style.zIndex = '999999';
-        }
-      });
-      
-      // Cerrar menú al hacer clic fuera
-      document.addEventListener('click', (e) => {
-        if (!container.contains(e.target) && !menu.contains(e.target)) {
-          menu.style.display = 'none';
-        }
-      });
-      
-      // Evitar que el clic en el menú lo cierre
-      menu.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-      
-      // Acción cerrar sesión
-      if (linkCerrar) {
-        linkCerrar.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userData');
-            localStorage.removeItem('miId');
-            // Cerrar menú primero
-            menu.style.display = 'none';
-            // Luego redirigir sin sobreposición
-            setTimeout(() => {
-              window.location.replace('login.html');
-            }, 100);
-          }
-        });
-      }
-      
-      // Acción perfil
-      if (linkPerfil) {
-        linkPerfil.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          window.location.href = 'perfil.html';
-        });
-      }
-      
-      // Acción favoritos
-      const linkFavoritos = document.getElementById('linkFavoritos');
-      if (linkFavoritos) {
-        linkFavoritos.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          window.location.href = 'favoritos.html';
-        });
-      }
-    }
-    
-    cargarNombreUsuario();
-    configurarMenuUsuario();
-  })();
+  window.initializeTopbar && window.initializeTopbar();
 </script>
 </html>
 

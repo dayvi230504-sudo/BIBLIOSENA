@@ -57,41 +57,31 @@
   font-size: 16px;
   cursor: pointer;
 }
+
+.detalle-container {
+  margin-top: calc(var(--topbar-height) + 60px);
+  padding-bottom: 40px;
+}
+
+@media (max-width: 768px) {
+  .detalle-container {
+    margin-top: calc(var(--topbar-height) + 40px);
+  }
+}
 </style>
 
 </head>
 <body>
-  <header class="encabezado">
-    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
-    <div class="buscador">
-      <input type="text" placeholder="Buscar">
-      <button><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06zM10.5 7a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" clip-rule="evenodd"/></svg></button>
-    </div>
-    <div class="usuario" id="usuarioContainer" style="position: relative; cursor: pointer;">
-      <span id="nombreUsuario">Usuario</span>
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M24 20a7 7 0 1 0 0-14a7 7 0 0 0 0 14M6 40.8V42h36v-1.2c0-4.48 0-6.72-.872-8.432a8 8 0 0 0-3.496-3.496C35.92 28 33.68 28 29.2 28H18.8c-4.48 0-6.72 0-8.432.872a8 8 0 0 0-3.496 3.496C6 34.08 6 36.32 6 40.8"/></svg>
-      <div class="usuario-menu" id="usuarioMenu" style="display: none; position: fixed; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 180px; z-index: 999999; overflow: hidden;">
-        <a href="#" id="linkFavoritos" style="display: block; padding: 12px 20px; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #eee; transition: background 0.2s;">
-          ❤️ Mis Favoritos
-        </a>
-        <a href="#" id="linkPerfil" style="display: block; padding: 12px 20px; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #eee; transition: background 0.2s;">
-          👤 Ver Perfil
-        </a>
-        <a href="#" id="linkCerrarSesion" style="display: block; padding: 12px 20px; color: #e74c3c; text-decoration: none; transition: background 0.2s;">
-          🚪 Cerrar Sesión
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <nav class="breadcrumb">
-    <a href="principal.html">Inicio</a> > <span>Detalles del Libro</span>
-  </nav>
+  {% set active_page = 'detalle' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarDetalle' %}
+  {% include 'includes/topbar.html' %}
 
   <main class="detalle-container">
     <div class="libro-detalle">
       <div class="libro-imagen">
-        <img id="libro-portada" src="/static/uploads/libro1.jpg" alt="Portada del libro">
+        <img id="libro-portada" src="/static/img/placeholder-book.svg" alt="Portada del libro">
       </div>
       
       <div class="libro-info">
@@ -167,15 +157,15 @@
       <h3>Libros Relacionados</h3>
       <div class="relacionados-grid">
         <div class="libro-mini">
-          <img src="/static/uploads/libro2.jpg" alt="Libro relacionado">
+          <img src="/static/img/placeholder-book.svg" alt="Libro relacionado">
           <p>Con Tantito Epazote</p>
         </div>
         <div class="libro-mini">
-          <img src="/static/uploads/libro3.jpg" alt="Libro relacionado">
+          <img src="/static/img/placeholder-book.svg" alt="Libro relacionado">
           <p>Una Diseñadora en NY</p>
         </div>
         <div class="libro-mini">
-          <img src="/static/uploads/libro4.jpg" alt="Libro relacionado">
+          <img src="/static/img/placeholder-book.svg" alt="Libro relacionado">
           <p>RSEI</p>
         </div>
       </div>
@@ -201,7 +191,7 @@
         autor: 'TRIGUERO MORENO, GUILLERMO',
         editorial: 'UNIVERSITAT OBERTA D CATALUNYA',
         categoria: 'CINE',
-        imagen: '/static/uploads/libro1.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-001-1',
         año: '2023',
         descripcion: 'Una fascinante exploración de los primeros días del cine, desde sus humildes comienzos hasta convertirse en el medio de entretenimiento más influyente del mundo.'
@@ -211,7 +201,7 @@
         autor: 'BOSCH, PEDRO',
         editorial: 'FONDO DE CULTURA ECONOMICA',
         categoria: 'NARRATIVA LATINOAMERICANA',
-        imagen: '/static/uploads/libro2.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-002-2',
         año: '2022',
         descripcion: 'Una colección de relatos que exploran la cultura mexicana a través de historias llenas de sabor y tradición.'
@@ -221,7 +211,7 @@
         autor: 'TRIGUERO MORENO, GUILLERMO',
         editorial: 'EDITORIAL CLUB UNIVERSITARIO (ECU)',
         categoria: 'DISEÑO',
-        imagen: '/static/uploads/libro3.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-003-3',
         año: '2023',
         descripcion: 'La historia de una joven diseñadora que busca hacer realidad sus sueños en la gran manzana.'
@@ -231,7 +221,7 @@
         autor: 'RSEI',
         editorial: 'EDICIONES UNIVERSIDAD SALAMANCA',
         categoria: 'LENGUA Y LINGÜÍSTICA',
-        imagen: '/static/uploads/libro4.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-004-4',
         año: '2023',
         descripcion: 'Revista de estudios sobre lengua y lingüística con los últimos avances en investigación.'
@@ -241,7 +231,7 @@
         autor: 'GARCÍA LÓPEZ, MARÍA',
         editorial: 'EDITORIAL TECNOLÓGICA',
         categoria: 'TECNOLOGÍA',
-        imagen: '/static/uploads/libro5.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-005-5',
         año: '2023',
         descripcion: 'Un análisis completo de las tecnologías emergentes y su impacto en la sociedad actual.'
@@ -251,7 +241,7 @@
         autor: 'MARTÍNEZ RUIZ, CARLOS',
         editorial: 'EDITORIAL ARTE Y CULTURA',
         categoria: 'ARTE',
-        imagen: '/static/uploads/libro6.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-006-6',
         año: '2022',
         descripcion: 'Un recorrido por las principales corrientes artísticas desde el Renacimiento hasta la actualidad.'
@@ -261,7 +251,7 @@
         autor: 'RODRÍGUEZ PÉREZ, ANA',
         editorial: 'EDITORIAL CIENTÍFICA',
         categoria: 'CIENCIA',
-        imagen: '/static/uploads/libro7.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-007-7',
         año: '2023',
         descripcion: 'Introducción a las ciencias naturales con ejemplos prácticos y experimentos.'
@@ -271,7 +261,7 @@
         autor: 'FERNÁNDEZ SILVA, LUIS',
         editorial: 'EDITORIAL CLÁSICOS',
         categoria: 'LITERATURA',
-        imagen: '/static/uploads/libro8.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-008-8',
         año: '2022',
         descripcion: 'Una selección de las obras más importantes de la literatura universal.'
@@ -281,7 +271,7 @@
         autor: 'GONZÁLEZ TORRES, PEDRO',
         editorial: 'EDITORIAL MATEMÁTICA',
         categoria: 'MATEMÁTICAS',
-        imagen: '/static/uploads/libro9.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-009-9',
         año: '2023',
         descripcion: 'Conceptos matemáticos aplicados a problemas reales del mundo moderno.'
@@ -291,7 +281,7 @@
         autor: 'LÓPEZ MORALES, ELENA',
         editorial: 'EDITORIAL FILOSOFÍA',
         categoria: 'FILOSOFÍA',
-        imagen: '/static/uploads/libro10.jpg',
+        imagen: '/static/img/placeholder-book.svg',
         isbn: '978-84-9788-010-0',
         año: '2023',
         descripcion: 'Análisis de las corrientes filosóficas del siglo XXI y su relevancia actual.'
@@ -355,12 +345,17 @@
       // Campos comunes
       document.getElementById('libro-categoria').textContent = elemento.categoria || '';
       document.getElementById('libro-estado').textContent = elemento.estado_elemento || 'Buen estado';
-      const portada = elemento.imagen ? (elemento.imagen.startsWith('uploads/') ? `/${elemento.imagen}` : elemento.imagen) : '/static/uploads/libro1.jpg';
-      document.getElementById('libro-portada').src = portada;
+      const placeholder = '/static/img/placeholder-book.svg';
+      const portada = elemento.imagen ? (elemento.imagen.startsWith('uploads/') ? `/${elemento.imagen}` : elemento.imagen) : placeholder;
+      const portadaEl = document.getElementById('libro-portada');
+      portadaEl.src = portada;
+      portadaEl.onerror = () => {
+        portadaEl.src = placeholder;
+      };
       document.getElementById('libro-descripcion').textContent = elemento.descripcion || '';
       
       // ACTUALIZAR DISPONIBILIDAD Y CANTIDAD REALES
-      const cantidadDisp = elemento.cantidad_disponible || 0;
+      const cantidadDisp = Number(elemento.cantidad_disponible_total ?? elemento.cantidad_disponible ?? 0);
       const estadoDisp = elemento.estado_disponibilidad || '';
       const estaDisponible = cantidadDisp > 0 && (estadoDisp.toLowerCase() !== 'prestado' || cantidadDisp > 0);
       
@@ -604,137 +599,6 @@
       }
     }
 
-    // Cargar nombre de usuario y configurar menú
-    async function cargarNombreUsuario() {
-      const token = localStorage.getItem('token');
-      const nombreEl = document.getElementById('nombreUsuario');
-      if (!nombreEl) return;
-      
-      // Intentar desde localStorage
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        try {
-          const user = JSON.parse(userData);
-          if (user.name || user.nombre) {
-            nombreEl.textContent = user.name || user.nombre;
-            return;
-          }
-        } catch (e) {}
-      }
-      
-      // Si hay token, intentar obtener desde API
-      if (token && token.startsWith('user-')) {
-        const userId = token.replace('user-', '');
-        try {
-          const res = await fetch(`/api/usuarios/${userId}`);
-          if (res.ok) {
-            const user = await res.json();
-            if (user.nombre) {
-              nombreEl.textContent = user.nombre;
-              // Guardar en localStorage
-              localStorage.setItem('userData', JSON.stringify({ name: user.nombre, id: user.id }));
-            }
-          }
-        } catch (e) {
-          console.error('Error cargando usuario:', e);
-        }
-      } else if (token === 'admin-token') {
-        nombreEl.textContent = 'Administrador';
-      }
-    }
-    
-    // Configurar menú de usuario
-    
-function configurarMenuUsuario() {
-  const container = document.getElementById('usuarioContainer');
-  const menu = document.getElementById('usuarioMenu');
-  const linkPerfil = document.getElementById('linkPerfil');
-  const linkCerrar = document.getElementById('linkCerrarSesion');
-
-  if (!container || !menu) return;
-
-  // helper to position menu using fixed coords relative to viewport
-  const posicionar = () => {
-    const rect = container.getBoundingClientRect();
-    menu.style.position = 'fixed';
-    // place menu below the container with small gap
-    menu.style.top = (rect.bottom + 8) + 'px';
-    // align right edge of menu with right edge of container (use right for responsiveness)
-    menu.style.right = (window.innerWidth - rect.right) + 'px';
-    menu.style.zIndex = '2147483646';
-  };
-
-  // Toggle menú al hacer clic
-  container.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = menu.style.display === 'block';
-    if (isOpen) {
-      menu.style.display = 'none';
-    } else {
-      posicionar();
-      menu.style.display = 'block';
-    }
-  });
-
-  // Cerrar menú al hacer clic fuera
-  document.addEventListener('click', (e) => {
-    if (!container.contains(e.target) && !menu.contains(e.target)) {
-      menu.style.display = 'none';
-    }
-  });
-
-  // Reposicionar u ocultar en scroll/resize para evitar que se "descontrole"
-  let rafId = null;
-  const handleScrollResize = () => {
-    if (menu.style.display === 'block') {
-      // use rAF to avoid layout thrash
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        posicionar();
-      });
-    }
-  };
-  window.addEventListener('scroll', handleScrollResize, {passive:true});
-  window.addEventListener('resize', () => {
-    // ocultar y forzar reposicion
-    menu.style.display = 'none';
-    handleScrollResize();
-  });
-  
-  // Configurar enlaces del menú
-  // Acción cerrar sesión
-  if (linkCerrar) {
-    linkCerrar.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userData');
-        window.location.href = 'login.html';
-      }
-    });
-  }
-  
-  // Acción perfil
-  if (linkPerfil) {
-    linkPerfil.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.location.href = 'perfil.html';
-    });
-  }
-  
-  // Acción favoritos
-  const linkFavoritos = document.getElementById('linkFavoritos');
-  if (linkFavoritos) {
-    linkFavoritos.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.location.href = 'favoritos.html';
-    });
-  }
-}
-
 // Inicialización cuando el DOM está listo
 (function() {
   // Cargar datos del libro si hay ID en la URL
@@ -765,8 +629,7 @@ function configurarMenuUsuario() {
   }
   
   // Cargar nombre de usuario y configurar menú
-  cargarNombreUsuario();
-  configurarMenuUsuario();
+  window.initializeTopbar && window.initializeTopbar();
 })();
 
 

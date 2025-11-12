@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel de Administración</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/principal.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .admin-header {
@@ -117,29 +118,581 @@
       border-radius: 8px;
       margin-bottom: 16px;
     }
+    .resource-shell {
+      display:grid;
+      gap:24px;
+      grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+      align-items:start;
+    }
+    .inventory-panel,
+    .resource-editor {
+      background:#ffffff;
+      border-radius:20px;
+      border:1px solid rgba(102,126,234,0.12);
+      box-shadow:0 18px 36px rgba(15,37,77,0.08);
+      padding:24px;
+    }
+    .inventory-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .inventory-header h3 {
+      margin:0;
+      font-size:22px;
+      color:#1c2751;
+    }
+    .inventory-header p {
+      margin:6px 0 0;
+      color:#5a6685;
+      font-size:14px;
+    }
+    .resource-heading__refresh {
+      background:#2196f3;
+      color:#ffffff;
+      border:none;
+      padding:10px 18px;
+      border-radius:12px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow:0 12px 28px rgba(33,150,243,0.25);
+      transition:transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .resource-heading__refresh:hover {
+      transform:translateY(-1px);
+      box-shadow:0 16px 32px rgba(33,150,243,0.32);
+    }
+    .inventory-tools {
+      display:grid;
+      gap:12px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    .inventory-tools label {
+      font-size:12px;
+      font-weight:600;
+      color:#42526e;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .inventory-tools input {
+      border:1px solid rgba(102,126,234,0.2);
+      border-radius:12px;
+      padding:10px 14px;
+      font-size:14px;
+      transition:border 0.2s ease, box-shadow 0.2s ease;
+    }
+    .inventory-tools input:focus {
+      outline:none;
+      border-color:rgba(102,126,234,0.55);
+      box-shadow:0 0 0 3px rgba(102,126,234,0.18);
+    }
+    .resource-chips {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:18px 0 6px;
+    }
+    .resource-chips .chip {
+      border:none;
+      background:rgba(102,126,234,0.14);
+      color:#4059ad;
+      padding:8px 16px;
+      border-radius:999px;
+      font-weight:600;
+      cursor:pointer;
+      transition:all 0.2s ease;
+    }
+    .resource-chips .chip:hover {
+      background:rgba(102,126,234,0.22);
+      transform:translateY(-1px);
+    }
+    .resource-chips .chip.is-active {
+      background:linear-gradient(135deg, #667eea, #764ba2);
+      color:#ffffff;
+      box-shadow:0 12px 26px rgba(102,126,234,0.3);
+    }
+    .inventory-actions {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .inventory-actions button {
+      border:none;
+      border-radius:12px;
+      padding:10px 16px;
+      font-weight:600;
+      cursor:pointer;
+      transition:transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .inventory-actions button.primary {
+      background:linear-gradient(135deg, #42a5f5, #7b61ff);
+      color:#ffffff;
+      box-shadow:0 12px 28px rgba(66,165,245,0.25);
+    }
+    .inventory-actions button.primary:hover {
+      transform:translateY(-1px);
+      box-shadow:0 16px 32px rgba(66,165,245,0.32);
+    }
+    .inventory-actions button.ghost {
+      background:rgba(102,126,234,0.1);
+      color:#4059ad;
+    }
+    .inventory-actions button.ghost:hover {
+      background:rgba(102,126,234,0.16);
+    }
+    .inventory-list {
+      margin-top:18px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .inventory-empty {
+      background:#f5f8ff;
+      border:1px dashed rgba(102,126,234,0.35);
+      border-radius:18px;
+      padding:32px;
+      text-align:center;
+      color:#56617e;
+      font-weight:600;
+    }
+    .resource-editor {
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .editor-tabs {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .editor-tabs button {
+      border:none;
+      border-radius:12px;
+      padding:10px 16px;
+      font-weight:600;
+      background:rgba(102,126,234,0.12);
+      color:#4059ad;
+      cursor:pointer;
+      transition:all 0.2s ease;
+    }
+    .editor-tabs button.is-active {
+      background:linear-gradient(135deg, #667eea, #764ba2);
+      color:#ffffff;
+      box-shadow:0 12px 26px rgba(102,126,234,0.28);
+    }
+    .resource-form-block {
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .resource-form-grid {
+      display:grid;
+      gap:14px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    }
+    .resource-form-grid label {
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:12px;
+      font-weight:600;
+      color:#42526e;
+    }
+    .resource-form-grid input,
+    .resource-form-grid select,
+    .resource-form-grid textarea {
+      border:1px solid rgba(102,126,234,0.22);
+      border-radius:12px;
+      padding:10px 14px;
+      font-size:14px;
+      background:#f9faff;
+      transition:border 0.2s ease, box-shadow 0.2s ease;
+    }
+    .resource-form-grid input:focus,
+    .resource-form-grid select:focus,
+    .resource-form-grid textarea:focus {
+      outline:none;
+      border-color:rgba(102,126,234,0.55);
+      box-shadow:0 0 0 3px rgba(102,126,234,0.18);
+      background:#ffffff;
+    }
+    .resource-form-grid textarea {
+      min-height:90px;
+      resize:vertical;
+    }
+    .resource-form-grid .full-width {
+      grid-column:1 / -1;
+    }
+    .resource-editor button[type="submit"] {
+      align-self:flex-end;
+      border:none;
+      border-radius:14px;
+      padding:12px 24px;
+      font-weight:700;
+      background:linear-gradient(135deg, #42a5f5, #7b61ff);
+      color:#ffffff;
+      box-shadow:0 14px 32px rgba(66,165,245,0.28);
+      cursor:pointer;
+      transition:transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .resource-editor button[type="submit"]:hover {
+      transform:translateY(-1px);
+      box-shadow:0 18px 38px rgba(66,165,245,0.35);
+    }
+    .resource-grid {
+      display:grid;
+      gap:16px;
+    }
+    .resource-chips {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin: 0 0 18px 0;
+    }
+    .resource-chips .chip {
+      border:none;
+      background: rgba(102,126,234,0.12);
+      color:#42526e;
+      padding:8px 16px;
+      border-radius:999px;
+      font-weight:600;
+      cursor:pointer;
+      transition:all 0.2s ease;
+    }
+    .resource-chips .chip:hover {
+      background: rgba(102,126,234,0.22);
+      transform: translateY(-1px);
+    }
+    .resource-chips .chip.is-active {
+      background:linear-gradient(135deg, #667eea, #764ba2);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(102,126,234,0.25);
+    }
+    .inventory-card {
+      position:relative;
+      background:#ffffff;
+      border-radius:20px;
+      border:1px solid rgba(102,126,234,0.12);
+      box-shadow:0 18px 32px rgba(15,37,77,0.08);
+      padding:22px 26px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      overflow:hidden;
+    }
+    .inventory-card::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.08));
+      opacity:0.8;
+      pointer-events:none;
+    }
+    .inventory-card > * {
+      position:relative;
+      z-index:1;
+    }
+    .inventory-card__header {
+      display:flex;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+    }
+    .inventory-card__title {
+      margin:0;
+      font-size:20px;
+      color:#1b2559;
+      font-weight:700;
+    }
+    .inventory-card__meta {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      font-size:13px;
+      color:#546e7a;
+    }
+    .inventory-card__badge {
+      background:rgba(102,126,234,0.18);
+      color:#4059ad;
+      padding:6px 12px;
+      border-radius:999px;
+      font-weight:600;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:0.6px;
+    }
+    .inventory-card__subbadge {
+      background:rgba(69,170,242,0.16);
+      color:#0b74b5;
+      padding:6px 12px;
+      border-radius:999px;
+      font-weight:600;
+      font-size:12px;
+    }
+    .inventory-card__status {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:600;
+      font-size:13px;
+      padding:6px 12px;
+      border-radius:999px;
+      background:rgba(76,175,80,0.16);
+      color:#1b5e20;
+    }
+    .inventory-card__status--alert {
+      background:rgba(244,67,54,0.16);
+      color:#b71c1c;
+    }
+    .inventory-card__description {
+      font-size:14px;
+      color:#455a64;
+      line-height:1.5;
+      margin:0;
+    }
+    .inventory-card__stats {
+      display:grid;
+      gap:12px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+    .inventory-card__stat {
+      background:rgba(255,255,255,0.75);
+      border-radius:14px;
+      padding:12px 14px;
+      border:1px solid rgba(102,126,234,0.16);
+      box-shadow:0 12px 22px rgba(15,37,77,0.06);
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .inventory-card__stat span {
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:0.6px;
+      color:#6b7b93;
+      font-weight:600;
+    }
+    .inventory-card__stat strong {
+      font-size:18px;
+      color:#29365a;
+    }
+    .inventory-card__progress {
+      position:relative;
+      height:8px;
+      border-radius:999px;
+      background:rgba(102,126,234,0.16);
+      overflow:hidden;
+    }
+    .inventory-card__progress div {
+      position:absolute;
+      top:0;
+      left:0;
+      bottom:0;
+      border-radius:999px;
+      background:linear-gradient(135deg, #42a5f5, #5c6bc0);
+    }
+    .inventory-card__footer {
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .inventory-card__footer button {
+      border:none;
+      border-radius:10px;
+      padding:10px 16px;
+      font-weight:600;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition:transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .inventory-card__footer button:hover {
+      transform: translateY(-1px);
+      box-shadow:0 12px 24px rgba(33,150,243,0.2);
+    }
+    @media (min-width: 768px) {
+      .resource-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      }
+    }
+    .resource-item {
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(33,150,243,0.18);
+      box-shadow:0 16px 32px rgba(33,150,243,0.12);
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      position:relative;
+      overflow:hidden;
+    }
+    .resource-item::after {
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(135deg, rgba(33,150,243,0.12), rgba(118,75,162,0.12));
+      opacity:0.6;
+      pointer-events:none;
+    }
+    .resource-item__header,
+    .resource-item__footer {
+      position:relative;
+      z-index:1;
+    }
+    .resource-item__title {
+      font-size:18px;
+      font-weight:700;
+      color:#0d47a1;
+      margin:0;
+    }
+    .resource-item__meta {
+      margin-top:6px;
+      color:#37474f;
+      font-size:13px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .resource-item__status {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:rgba(76,175,80,0.16);
+      color:#1b5e20;
+      padding:6px 12px;
+      border-radius:999px;
+      font-weight:600;
+    }
+    .resource-item__status--no {
+      background:rgba(244,67,54,0.16);
+      color:#b71c1c;
+    }
+    .resource-item__actions {
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:1;
+    }
+    .resource-empty {
+      background:#f5f8ff;
+      border:1px dashed rgba(102,126,234,0.4);
+      border-radius:18px;
+      padding:40px;
+      text-align:center;
+      color:#455a64;
+    }
+    @media (max-width: 1024px) {
+      .admin-header {
+        padding: 16px;
+        text-align: center;
+      }
+      .admin-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .admin-tab {
+        flex: 0 0 auto;
+        min-width: 140px;
+      }
+      main {
+        padding: 0 4vw 40px;
+      }
+      .mensajes-panel {
+        max-height: none;
+      }
+      .resource-heading {
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .resource-heading__refresh {
+        align-self:stretch;
+        text-align:center;
+      }
+      .resource-card {
+        padding:20px;
+      }
+      .resource-board,
+      .resource-board--two {
+        grid-template-columns:1fr;
+      }
+    }
+    @media (max-width: 768px) {
+      .admin-header {
+        border-radius: 0;
+      }
+      .admin-tabs {
+        gap: 6px;
+        padding-bottom: 6px;
+      }
+      .admin-tab {
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+      .bot-busqueda {
+        padding: 12px;
+      }
+      .bot-busqueda input,
+      .bot-busqueda button {
+        width: 100%;
+      }
+      .bot-busqueda div {
+        flex-direction: column;
+      }
+      .resource-card__title {
+        font-size:18px;
+      }
+      .resource-summary__item {
+        flex-direction:column;
+        align-items:flex-start;
+        gap:4px;
+      }
+    }
   </style>
 </head>
 <body>
-  <header class="encabezado">
-    <img src="/static/uploads/logosena.jpg" alt="Logo SENA" class="logo">
-    <h2 style="margin-left:16px; flex:1;">⚙️ Panel de Administración</h2>
-    <a href="principal.html" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; text-decoration:none; margin-right:8px;">← Inicio</a>
-    <a href="admin_mensajes.html" style="background:#667eea; color:white; padding:8px 16px; border:none; border-radius:6px; text-decoration:none; position:relative;">
-      💬 Mensajes
-      <span id="badgeMensajesAdmin" style="display:none; position:absolute; top:-8px; right:-8px; background:#f44336; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; font-weight:bold;">0</span>
-    </a>
-  </header>
+  {% set active_page = 'admin' %}
+  {% set nav_context = 'general' %}
+  {% set search_placeholder = 'Buscar en la biblioteca...' %}
+  {% set search_button_id = 'btnBuscarPanel' %}
+  {% include 'includes/topbar.html' %}
 
   <main class="content">
+    <div class="admin-top-actions" style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; background:rgba(102,126,234,0.12); border:1px solid rgba(102,126,234,0.2); padding:18px 20px; border-radius:16px; margin-bottom:20px;">
+      <div>
+        <h1 style="margin:0; font-size:26px; color:#2c3e50;">⚙️ Panel de Administración</h1>
+        <p style="margin:6px 0 0; color:#546e7a;">Control centralizado para gestionar préstamos, catálogos y usuarios.</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="principal.html" style="background:#546e7a; color:white; padding:10px 16px; border-radius:10px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">
+          ← Volver al inicio
+        </a>
+        <a href="admin_mensajes.html" style="background:#667eea; color:white; padding:10px 16px; border-radius:10px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; position:relative; gap:8px;">
+          💬 Mensajes
+          <span id="badgeMensajesAdmin" style="display:none; position:absolute; top:-10px; right:-10px; background:#f44336; color:white; border-radius:50%; width:22px; height:22px; font-size:11px; display:flex; align-items:center; justify-content:center; font-weight:bold;">0</span>
+        </a>
+      </div>
+    </div>
+
     <div class="admin-header">
-      <h2 style="margin:0 0 16px 0; color:white;">📊 Panel de Administración</h2>
       <div class="admin-tabs">
         <div class="admin-tab active" data-section="pendientes">
           ⏳ Solicitudes Pendientes
           <span class="badge" id="badgePendientes" style="display:none;">0</span>
         </div>
         <div class="admin-tab" data-section="aprobados">✅ Préstamos Aprobados</div>
-        <div class="admin-tab" data-section="libros">📚 Gestión de Libros</div>
+        <div class="admin-tab" data-section="recursos">📦 Gestión de Recursos</div>
         <div class="admin-tab" data-section="trazabilidad">📊 Trazabilidad</div>
         <div class="admin-tab" data-section="espera">
           📋 Lista de Espera
@@ -178,38 +731,147 @@
       <div id="listaAprobados" class="relacionados-grid" style="grid-template-columns: 1fr; gap: 12px; margin-top:16px;"></div>
     </div>
 
-    <!-- Sección: Gestión de Libros -->
-    <div id="section-libros" class="section-content">
-      <div class="bot-busqueda">
-        <strong>🤖 Bot de Búsqueda:</strong>
-        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-          <input id="fCat" placeholder="Categoría" style="flex:1; min-width:200px; padding:10px; border:1px solid #ddd; border-radius:6px;" />
-          <input id="fCodigo" placeholder="Código inventario" style="flex:1; min-width:200px; padding:10px; border:1px solid #ddd; border-radius:6px;" />
-          <input id="fTitulo" placeholder="Título o autor" style="flex:1; min-width:200px; padding:10px; border:1px solid #ddd; border-radius:6px;" />
-          <button id="btnBuscar" style="background:#2196f3; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">🔍 Buscar</button>
-        </div>
-      </div>
-      <h3 style="border-left:4px solid #2196f3; padding-left:12px;">📚 Gestión de Libros</h3>
-      <div style="background:#fff; padding:16px; border:1px solid #e1e8ed; border-radius:8px; margin-top:16px; margin-bottom:16px;">
-        <div class="eliminar-todo-box">
-          <strong>⚠️ Zona de Peligro</strong>
-          <p style="margin:8px 0; font-size:14px;">Opciones de eliminación masiva</p>
-          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
-            <button class="btn-eliminar-todo" onclick="mostrarConfirmEliminar()">🗑️ Eliminar Todos los Libros</button>
-            <button class="btn-eliminar-todo" onclick="eliminarPorCategoriaAdmin()" style="background:#9c27b0;">📂 Eliminar por Categoría</button>
-          </div>
-          <div class="eliminar-confirm" id="confirmEliminar" style="display:none; background:#f8d7da; border:2px solid #dc3545; padding:12px; border-radius:8px; margin-top:8px;">
-            <p style="margin:0 0 8px 0; color:#721c24; font-weight:600;">⚠️ ESTA ACCIÓN NO SE PUEDE DESHACER</p>
-            <p style="margin:0 0 8px 0;">Escribe <strong>ELIMINAR TODO</strong> para confirmar:</p>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <input type="text" id="confirmText" placeholder="ELIMINAR TODO" style="padding:8px; border:2px solid #dc3545; border-radius:4px; width:200px;" />
-              <button onclick="eliminarTodosLosLibros()" style="background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">Confirmar</button>
-              <button onclick="cancelarEliminar()" style="background:#6c757d; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Cancelar</button>
+    <!-- Sección: Gestión de Recursos -->
+    <div id="section-recursos" class="section-content">
+      <div class="resource-shell">
+        <section class="inventory-panel">
+          <div class="inventory-header">
+            <div>
+              <h3>📦 Inventario actual</h3>
+              <p>Busca y revisa los recursos registrados en segundos.</p>
             </div>
+            <button type="button" class="resource-heading__refresh" onclick="cargarRecursos()">⟳ Actualizar lista</button>
           </div>
-        </div>
+
+          <div class="inventory-tools">
+            <label for="fCat">Filtrar por categoría
+              <input id="fCat" placeholder="Ej: Libros, Equipos..." />
+            </label>
+            <label for="fCodigo">Código o identificador
+              <input id="fCodigo" placeholder="Código interno, barras o inventario" />
+            </label>
+            <label for="fTitulo">Título o palabra clave
+              <input id="fTitulo" placeholder="Título, autor o descripción..." />
+            </label>
+          </div>
+
+          <div class="resource-chips" id="inventoryFilters">
+            <button type="button" class="chip is-active" data-filter="todos">Todo</button>
+            <button type="button" class="chip" data-filter="libro">Solo libros</button>
+            <button type="button" class="chip" data-filter="pc">Solo equipos</button>
+          </div>
+
+          <div class="inventory-actions">
+            <button type="button" class="primary" id="btnBuscar">🔍 Buscar</button>
+            <button type="button" class="ghost" id="btnLimpiarFiltros">Limpiar filtros</button>
+          </div>
+
+          <div id="listaInventario" class="inventory-list"></div>
+        </section>
+
+        <aside class="resource-editor">
+          <div class="editor-tabs" id="editorTabs">
+            <button type="button" class="is-active" data-target="formLibro">Registrar libro</button>
+            <button type="button" data-target="formPortatil">Registrar portátil</button>
+          </div>
+
+          <form id="formLibro" class="resource-form-block" enctype="multipart/form-data">
+            <input type="hidden" name="categoria" value="Libros">
+            <input type="hidden" name="cantidad_disponible" value="1">
+            <input type="hidden" name="cantidad_prestado" value="0">
+            <div class="resource-form-grid">
+              <label>Título *
+                <input type="text" name="titulo" required placeholder="Ej: El principito">
+              </label>
+
+              <label>Autor *
+                <input type="text" name="autor" required placeholder="Nombre del autor">
+              </label>
+
+              <label>Código de barras / inventario
+                <input type="text" name="codigo_inventario" placeholder="Opcional, para identificar copias">
+              </label>
+
+              <label>Año de publicación
+                <input type="number" name="anio_publicacion" min="0" placeholder="Ej: 2023">
+              </label>
+
+              <label class="full-width">Descripción
+                <textarea name="descripcion" placeholder="Añade una reseña breve o notas importantes"></textarea>
+              </label>
+
+              <label>Unidades disponibles *
+                <input type="number" name="stock" min="1" value="1" required>
+              </label>
+
+              <label>Estado del recurso
+                <select name="estado_disponibilidad">
+                <option value="Disponible" selected>Disponible</option>
+                <option value="No disponible">No disponible</option>
+                </select>
+              </label>
+
+              <label class="full-width">Imagen (opcional)
+                <input type="file" name="imagen" accept="image/*">
+              </label>
+            </div>
+            <button type="submit">💾 Guardar libro</button>
+          </form>
+
+          <form id="formPortatil" class="resource-form-block" enctype="multipart/form-data" style="display:none;">
+            <input type="hidden" name="categoria" value="Equipos Informáticos">
+            <input type="hidden" name="subcategoria" value="Portátiles">
+            <input type="hidden" name="autor" value="">
+            <input type="hidden" name="cantidad_disponible" value="1">
+            <input type="hidden" name="cantidad_prestado" value="0">
+            <div class="resource-form-grid">
+              <label>Código interno *
+                <input type="text" name="codigo_interno" required placeholder="Ej: PTL-024">
+              </label>
+
+              <label>Número de serie *
+                <input type="text" name="numero_serie" required placeholder="Serie del fabricante">
+              </label>
+
+              <label>Placa SENA *
+                <input type="text" name="placa_sena" required placeholder="Código patrimonial">
+              </label>
+
+              <label>Marca
+                <input type="text" name="marca" placeholder="Ej: Lenovo">
+              </label>
+
+              <label>Modelo
+                <input type="text" name="modelo" placeholder="Ej: ThinkPad L14">
+              </label>
+
+              <label>Unidades disponibles *
+                <input type="number" name="stock" min="1" value="1" required>
+              </label>
+
+              <label>Estado del equipo
+                <select name="estado_disponibilidad">
+                <option value="Disponible" selected>Disponible</option>
+                <option value="No disponible">No disponible</option>
+                </select>
+              </label>
+
+              <label class="full-width">Especificaciones
+                <textarea name="especificaciones" placeholder="Procesador, RAM, accesorios incluidos..."></textarea>
+              </label>
+
+              <label class="full-width">Descripción adicional
+                <textarea name="descripcion" placeholder="Notas u observaciones relevantes"></textarea>
+              </label>
+
+              <label class="full-width">Imagen (opcional)
+                <input type="file" name="imagen" accept="image/*">
+              </label>
+            </div>
+            <button type="submit">💾 Guardar portátil</button>
+          </form>
+        </aside>
       </div>
-      <div id="listaInventario" class="relacionados-grid" style="grid-template-columns: 1fr; gap: 12px;"></div>
     </div>
 
     <!-- Sección: Trazabilidad -->
@@ -304,38 +966,70 @@
     <div id="modalUsuario" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
       <div style="background:white; padding:30px; border-radius:15px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto;">
         <h2 id="modalUsuarioTitulo" style="margin-top:0;">Agregar Usuario</h2>
-        <form id="formUsuario" onsubmit="guardarUsuario(event)">
+        <form id="formUsuario" onsubmit="guardarUsuario(event)" class="modern-form">
           <input type="hidden" id="usuarioIdEdit">
-          <div style="margin-bottom:15px;">
-            <label style="display:block; margin-bottom:5px; font-weight:600;">Nombre</label>
-            <input type="text" id="usuarioNombre" required style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="usuarioNombre">Nombre completo<span class="required">*</span></label>
+              <input type="text" id="usuarioNombre" required placeholder="Ej: Ana María Pérez">
+            </div>
+            <div class="form-field">
+              <label for="usuarioDocumento">Número de documento<span class="required">*</span></label>
+              <input type="text" id="usuarioDocumento" required placeholder="Identificación">
+            </div>
+            <div class="form-field">
+              <label for="usuarioTelefono">Celular<span class="required">*</span></label>
+              <input type="tel" id="usuarioTelefono" required placeholder="(+57) 300 000 0000">
+            </div>
+            <div class="form-field">
+              <label for="usuarioCorreo">Correo electrónico</label>
+              <input type="email" id="usuarioCorreo" placeholder="nombre@correo.com">
+              <small>Se usará para notificaciones o restablecer contraseña.</small>
+            </div>
+            <div class="form-field">
+              <label for="usuarioPrograma">Programa de formación<span class="required">*</span></label>
+              <input type="text" id="usuarioPrograma" required placeholder="Programa SENA">
+            </div>
+            <div class="form-field">
+              <label for="usuarioFicha">Número de ficha<span class="required">*</span></label>
+              <input type="text" id="usuarioFicha" required placeholder="Ej: 2547896">
+            </div>
+            <div class="form-field">
+              <label for="usuarioRol">Tipo de rol<span class="required">*</span></label>
+              <select id="usuarioRol" required>
+                <option value="">Selecciona un rol</option>
+                <option value="aprendiz">Aprendiz</option>
+                <option value="instructor">Instructor</option>
+                <option value="administrativo">Administrativo</option>
+                <option value="funcionario">Funcionario</option>
+                <option value="visitante">Visitante</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="usuarioUsername">Usuario de acceso<span class="required">*</span></label>
+              <input type="text" id="usuarioUsername" required placeholder="Nombre de usuario">
+            </div>
+            <div class="form-field">
+              <label for="usuarioPassword">Contraseña <span id="passwordLabel">(requerida)</span></label>
+              <input type="password" id="usuarioPassword" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="form-field">
+              <label for="usuarioCanalPreferido">Medio preferido de contacto</label>
+              <select id="usuarioCanalPreferido">
+                <option value="correo">Correo electrónico</option>
+                <option value="telefono">Teléfono</option>
+                <option value="ambos">Ambos</option>
+              </select>
+            </div>
           </div>
-          <div style="margin-bottom:15px;">
-            <label style="display:block; margin-bottom:5px; font-weight:600;">Documento</label>
-            <input type="text" id="usuarioDocumento" required style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
+          <div class="form-state-switch" style="margin-top:16px;">
+            <input type="checkbox" id="usuarioResetear">
+            <label for="usuarioResetear" style="font-weight:600; color:#344151;">Forzar restablecimiento de contraseña al próximo ingreso</label>
           </div>
-          <div style="margin-bottom:15px;">
-            <label style="display:block; margin-bottom:5px; font-weight:600;">Correo</label>
-            <input type="email" id="usuarioCorreo" style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
-          </div>
-          <div style="margin-bottom:15px;">
-            <label style="display:block; margin-bottom:5px; font-weight:600;">Username</label>
-            <input type="text" id="usuarioUsername" required style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
-          </div>
-          <div style="margin-bottom:15px;">
-            <label style="display:block; margin-bottom:5px; font-weight:600;">Contraseña <span id="passwordLabel">(requerida)</span></label>
-            <input type="password" id="usuarioPassword" style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
-          </div>
-          <div style="margin-bottom:15px;">
-            <label style="display:block; margin-bottom:5px; font-weight:600;">Rol</label>
-            <select id="usuarioRole" required style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:5px;">
-              <option value="user">Usuario</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </div>
-          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
-            <button type="button" onclick="cerrarModalUsuario()" style="padding:10px 20px; border:none; border-radius:5px; cursor:pointer; background:#757575; color:white;">Cancelar</button>
-            <button type="submit" style="padding:10px 20px; border:none; border-radius:5px; cursor:pointer; background:#667eea; color:white; font-weight:600;">Guardar</button>
+          <div class="form-actions" style="margin-top:24px;">
+            <button type="button" class="btn-ghost" onclick="cerrarModalUsuario()">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar usuario</button>
           </div>
         </form>
       </div>
@@ -360,7 +1054,7 @@
           switch(section) {
             case 'pendientes': cargarPendientes(); break;
             case 'aprobados': cargarAprobados(); break;
-            case 'libros': cargarInventario(); break;
+            case 'recursos': cargarRecursos(); break;
             case 'trazabilidad': cargarTrazabilidad(); break;
             case 'espera': cargarEspera(); break;
             case 'usuarios': cargarUsuarios(); break;
@@ -569,7 +1263,23 @@
     let tipoFiltroInventario = 'todos';
     function filtrarPorTipo(tipo) {
       tipoFiltroInventario = tipo;
-      cargarInventario();
+      document.querySelectorAll('#inventoryFilters .chip').forEach(chip => {
+        chip.classList.toggle('is-active', chip.dataset.filter === tipo);
+      });
+      cargarRecursos();
+    }
+
+    function resetFiltrosInventario() {
+      const fCat = document.getElementById('fCat');
+      const fCodigo = document.getElementById('fCodigo');
+      const fTitulo = document.getElementById('fTitulo');
+      if (fCat) fCat.value = '';
+      if (fCodigo) fCodigo.value = '';
+      if (fTitulo) fTitulo.value = '';
+      tipoFiltroInventario = 'todos';
+      const chips = document.querySelectorAll('#inventoryFilters .chip');
+      chips.forEach((chip, idx) => chip.classList.toggle('is-active', idx === 0));
+      cargarRecursos();
     }
 
     // Actualizar badge de mensajes en el header
@@ -591,7 +1301,7 @@
     }
 
     // Funciones de inventario
-    async function cargarInventario(){
+    async function cargarRecursos(){
       const cont = document.getElementById('listaInventario');
       if (!cont) return;
       cont.innerHTML = 'Cargando...';
@@ -624,41 +1334,83 @@
           (!ftit || (x.titulo||'').toLowerCase().includes(ftit) || (x.autor||'').toLowerCase().includes(ftit))
         );
         if (!filtrados.length) {
-          cont.innerHTML = '<div style="padding:40px; text-align:center; color:#666;">Sin resultados.</div>';
+          cont.innerHTML = '<div class="inventory-empty">No encontramos coincidencias con los filtros seleccionados.</div>';
           return;
         }
         cont.innerHTML = '';
         for (const it of filtrados) {
-          const d = document.createElement('div');
-          d.style.background = '#fff';
-          d.style.padding = '12px';
-          d.style.border = '1px solid #e1e8ed';
-          d.style.borderRadius = '8px';
-          d.style.marginBottom = '12px';
-          d.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap: wrap;">
-              <div style="flex:1;">
-                <div><strong>${it.titulo || it.categoria || 'Elemento'}</strong> ${it.codigo_inventario ? `— <em>${it.codigo_inventario}</em>`:''}</div>
-                <div style="color:#666; font-size:13px; margin-top:4px;">Cat: ${it.categoria || ''} | Sub: ${it.subcategoria || ''}</div>
-                <div style="color:#666; font-size:13px;">Disp: ${it.cantidad_disponible}/${it.stock} | Prestados: ${it.cantidad_prestado}</div>
+          const titulo = (it.titulo || it.categoria || 'Recurso').trim();
+          const codigo = (it.codigo_inventario || it.isbn || '').trim();
+          const categoria = (it.categoria || 'Sin categoría').trim();
+          const subcategoria = (it.subcategoria || '').trim();
+          const autor = (it.autor || '').trim();
+          const descripcionLimpia = (it.descripcion || '').replace(/\s+/g, ' ').trim();
+          const descripcion = descripcionLimpia.length > 160 ? `${descripcionLimpia.slice(0, 157)}...` : descripcionLimpia;
+          const disponibles = Number(it.cantidad_disponible_total ?? it.cantidad_disponible ?? 0) || 0;
+          const prestados = Number(it.cantidad_prestado_total ?? it.cantidad_prestado ?? 0) || 0;
+          const stockHas = Number(it.stock_total ?? it.stock ?? 0) || 0;
+          const stock = Math.max(stockHas, disponibles + prestados);
+          const disponibilidadPct = stock > 0 ? Math.round((disponibles / stock) * 100) : 0;
+          const enAlerta = stock === 0 || disponibles === 0;
+          const statusLabel = enAlerta ? 'Sin stock' : 'Disponible';
+          const statusIcon = enAlerta ? '⚠️' : '✅';
+          const metadata = [
+            codigo ? `Código: ${codigo}` : null,
+            autor ? `Autor / Responsable: ${autor}` : null
+          ].filter(Boolean).join(' · ');
+          const safeTitle = titulo.replace(/'/g, "\\'");
+
+          const card = document.createElement('article');
+          card.className = 'inventory-card';
+          card.innerHTML = `
+            <div class="inventory-card__header">
+              <div>
+                <div class="inventory-card__meta">
+                  <span class="inventory-card__badge">${categoria}</span>
+                  ${subcategoria ? `<span class="inventory-card__subbadge">${subcategoria}</span>` : ''}
+                  ${metadata ? `<span style="color:#6b7b93;">${metadata}</span>` : ''}
+                </div>
+                <h4 class="inventory-card__title">${titulo}</h4>
+                ${descripcion ? `<p class="inventory-card__description">${descripcion}</p>` : ''}
               </div>
-              <div style="display:flex; gap:8px;">
-                <button onclick="location.href='detalle_libro.html?id=${it.id}'" style="background:#2196f3; color:white; padding:6px 12px; border:none; border-radius:6px; cursor:pointer;">Ver</button>
-                <button onclick="eliminarLibro('${it.id}')" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:6px; cursor:pointer;">🗑️</button>
+              <span class="inventory-card__status ${enAlerta ? 'inventory-card__status--alert' : ''}">
+                ${statusIcon} ${statusLabel}
+              </span>
+            </div>
+            <div class="inventory-card__stats">
+              <div class="inventory-card__stat">
+                <span>Disponibles</span>
+                <strong>${disponibles}</strong>
               </div>
-            </div>`;
-          cont.appendChild(d);
+              <div class="inventory-card__stat">
+                <span>Prestados</span>
+                <strong>${prestados}</strong>
+              </div>
+              <div class="inventory-card__stat">
+                <span>Total inventario</span>
+                <strong>${stock}</strong>
+                <div class="inventory-card__progress">
+                  <div style="width:${Math.min(100, Math.max(0, disponibilidadPct))}%;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="inventory-card__footer">
+              <button type="button" style="background:#2196f3; color:#ffffff;" onclick="location.href='detalle_libro.html?id=${it.id}'">🔍 Ver detalle</button>
+              <button type="button" style="background:#dc3545; color:#ffffff;" onclick="eliminarRecurso('${it.id}', '${safeTitle}')">🗑️ Eliminar</button>
+            </div>
+          `;
+          cont.appendChild(card);
         }
       } catch(e) {
-        cont.innerHTML = '<div style="padding:20px; color:#f44336;">Error cargando inventario</div>';
+        cont.innerHTML = '<div class="inventory-empty" style="color:#b71c1c; border-color:rgba(244,67,54,0.28);">Error cargando inventario</div>';
       }
     }
 
-    async function eliminarLibro(id) {
+    async function eliminarRecurso(id, titulo) {
       const result = await Swal.fire({
         icon: 'warning',
-        title: '¿Eliminar libro?',
-        html: 'Esta acción eliminará el libro y todas sus copias relacionadas.<br><br>⚠️ El historial de préstamos se preservará para trazabilidad.',
+        title: '¿Eliminar recurso?',
+        html: `Esta acción eliminará <strong>${titulo}</strong> del inventario.<br><br>⚠️ El historial de préstamos asociado se conservará para trazabilidad.`,
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar',
@@ -674,249 +1426,27 @@
         if (res.ok && data.ok) {
           Swal.fire({
             icon: 'success',
-            title: 'Eliminado',
-            html: `Se eliminaron ${data.eliminados} registro(s) relacionado(s).<br><br>📊 Historial preservado: ${data.prestamos_preservados} préstamo(s) histórico(s).`,
-            timer: 3000,
+            title: 'Recurso eliminado',
+            html: data.eliminados
+              ? `Se eliminaron ${data.eliminados} registros relacionados.<br>Historial preservado: ${data.prestamos_preservados || 0} préstamos.`
+              : 'Se eliminó correctamente.',
+            timer: 2600,
             showConfirmButton: false
           });
-          cargarInventario();
+          cargarRecursos();
         } else {
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: data.error || 'No se pudo eliminar el libro'
+            text: data.error || 'No se pudo eliminar el recurso'
           });
         }
       } catch(e) {
         Swal.fire({
           icon: 'error',
-          title: 'Error',
-          text: 'Error de conexión: ' + e.message
+          title: 'Error de conexión',
+          text: e.message
         });
-      }
-    }
-
-    function mostrarConfirmEliminar() {
-      document.getElementById('confirmEliminar').style.display = 'block';
-      document.getElementById('confirmText').value = '';
-    }
-
-    function cancelarEliminar() {
-      document.getElementById('confirmEliminar').style.display = 'none';
-    }
-
-    async function eliminarTodosLosLibros() {
-      const confirmText = document.getElementById('confirmText').value;
-      if (confirmText !== 'ELIMINAR TODO') {
-        alert('Debes escribir exactamente: ELIMINAR TODO');
-        return;
-      }
-      if (!confirm('⚠️ ¿ESTÁS SEGURO? Esta acción eliminará TODOS los libros. Esta acción NO se puede deshacer.')) {
-        return;
-      }
-      
-      const confirmDiv = document.getElementById('confirmEliminar');
-      
-      try {
-        const res = await fetch('/api/libros');
-        const libros = res.ok ? await res.json() : [];
-        
-        if (libros.length === 0) {
-          alert('No hay libros para eliminar');
-          return;
-        }
-        
-        // Crear barra de progreso
-        confirmDiv.innerHTML = `
-          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <strong>Eliminando todos los libros...</strong>
-            <span id="porcentaje">0%</span>
-          </div>
-          <div style="background:#ccc; border-radius:10px; height:30px; overflow:hidden; position:relative; margin-bottom:10px;">
-            <div id="barraProgreso" style="background:linear-gradient(90deg, #4caf50, #8bc34a); height:100%; width:0%; transition:width 0.3s; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:14px;">
-              0%
-            </div>
-          </div>
-          <div style="font-size:14px; margin-bottom:10px;">
-            <span id="contadorProgreso">0 / ${libros.length}</span> libros eliminados
-          </div>
-        `;
-        
-        let eliminados = 0;
-        let errores = 0;
-        
-        for (let i = 0; i < libros.length; i++) {
-          const libro = libros[i];
-          try {
-            const delRes = await fetch(`/api/libros/${libro.id}`, { method: 'DELETE' });
-            if (delRes.ok) {
-              const result = await delRes.json();
-              // La nueva API devuelve cuántos registros eliminó
-              if (result.ok && result.eliminados) {
-                eliminados += result.eliminados; // Sumar todos los registros eliminados
-              } else {
-                eliminados++;
-              }
-            } else {
-              errores++;
-              const errorData = await delRes.json().catch(() => ({}));
-              console.error('Error eliminando', libro.id, errorData.error || 'Error desconocido');
-            }
-          } catch (e) {
-            errores++;
-            console.error('Error eliminando', libro.id, e);
-          }
-          
-          // Actualizar progreso
-          const porcentaje = Math.round(((i + 1) / libros.length) * 100);
-          const barraProgreso = document.getElementById('barraProgreso');
-          const porcentajeText = document.getElementById('porcentaje');
-          const contadorProgreso = document.getElementById('contadorProgreso');
-          
-          if (barraProgreso) {
-            barraProgreso.style.width = porcentaje + '%';
-            barraProgreso.textContent = porcentaje + '%';
-          }
-          if (porcentajeText) porcentajeText.textContent = porcentaje + '%';
-          if (contadorProgreso) contadorProgreso.textContent = `${i + 1} / ${libros.length} libros eliminados`;
-          
-          await new Promise(r => setTimeout(r, 50)); // Pequeña pausa
-        }
-        
-        confirmDiv.innerHTML = `
-          <div style="background:#d4edda; padding:12px; border-radius:8px; color:#155724;">
-            ✓ Eliminación completada<br>
-            <strong>Total:</strong> ${libros.length}<br>
-            <strong>Eliminados:</strong> ${eliminados}<br>
-            <strong>Errores:</strong> ${errores}<br>
-            <button onclick="cancelarEliminar(); cargarInventario();" style="background:#4caf50; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-top:10px;">Cerrar</button>
-          </div>
-        `;
-        cargarInventario();
-      } catch (e) {
-        alert('Error al eliminar libros: ' + e.message);
-      }
-    }
-    
-    async function eliminarPorCategoriaAdmin() {
-      try {
-        // Obtener todas las categorías únicas de los elementos
-        const resLibros = await fetch('/api/libros');
-        const todosLosLibros = resLibros.ok ? await resLibros.json() : [];
-        
-        // Obtener categorías únicas
-        const categoriasUnicas = [...new Set(todosLosLibros.map(l => l.categoria).filter(c => c))];
-        
-        if (categoriasUnicas.length === 0) {
-          alert('No hay elementos con categorías definidas');
-          return;
-        }
-        
-        // Crear modal de selección
-        const modalHtml = categoriasUnicas.map((c, i) => 
-          `<button onclick="seleccionarCategoriaAdmin('${c}')" style="display:block; width:100%; padding:12px; margin:5px 0; background:#667eea; color:white; border:none; border-radius:6px; cursor:pointer; text-align:left;">
-            ${i + 1}. ${c}
-          </button>`
-        ).join('');
-        
-        const confirmDiv = document.getElementById('confirmEliminar');
-        confirmDiv.style.display = 'block';
-        confirmDiv.innerHTML = `
-          <div style="margin-bottom:15px;">
-            <strong>Selecciona la categoría a eliminar:</strong>
-          </div>
-          ${modalHtml}
-          <button onclick="cancelarEliminar()" style="background:#757575; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-top:15px; width:100%;">Cancelar</button>
-        `;
-      } catch (e) {
-        alert('Error al cargar categorías: ' + e.message);
-      }
-    }
-    
-    async function seleccionarCategoriaAdmin(categoria) {
-      const confirmDiv = document.getElementById('confirmEliminar');
-      
-      try {
-        const resLibros = await fetch('/api/libros');
-        const todosLosLibros = resLibros.ok ? await resLibros.json() : [];
-        
-        const elementosAEliminar = todosLosLibros.filter(l => 
-          l.categoria && l.categoria.toLowerCase() === categoria.toLowerCase()
-        );
-        
-        if (elementosAEliminar.length === 0) {
-          alert(`No hay elementos en la categoría "${categoria}"`);
-          cancelarEliminar();
-          return;
-        }
-        
-        if (!confirm(`¿Eliminar ${elementosAEliminar.length} elementos de la categoría "${categoria}"?\n\n⚠️ Esta acción NO se puede deshacer.`)) {
-          cancelarEliminar();
-          return;
-        }
-        
-        // Crear barra de progreso
-        confirmDiv.innerHTML = `
-          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <strong>Eliminando "${categoria}"...</strong>
-            <span id="porcentaje">0%</span>
-          </div>
-          <div style="background:#ccc; border-radius:10px; height:30px; overflow:hidden; position:relative; margin-bottom:10px;">
-            <div id="barraProgreso" style="background:linear-gradient(90deg, #4caf50, #8bc34a); height:100%; width:0%; transition:width 0.3s; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:14px;">
-              0%
-            </div>
-          </div>
-          <div style="font-size:14px; margin-bottom:10px;">
-            <span id="contadorProgreso">0 / ${elementosAEliminar.length}</span> elementos eliminados
-          </div>
-        `;
-        
-        let eliminados = 0;
-        let errores = 0;
-        
-        for (let i = 0; i < elementosAEliminar.length; i++) {
-          const elem = elementosAEliminar[i];
-          try {
-            const delRes = await fetch(`/api/libros/${elem.id}`, { method: 'DELETE' });
-            if (delRes.ok) {
-              eliminados++;
-            } else {
-              errores++;
-            }
-          } catch (e) {
-            errores++;
-            console.error('Error eliminando', elem.id, e);
-          }
-          
-          // Actualizar progreso
-          const porcentaje = Math.round(((i + 1) / elementosAEliminar.length) * 100);
-          const barraProgreso = document.getElementById('barraProgreso');
-          const porcentajeText = document.getElementById('porcentaje');
-          const contadorProgreso = document.getElementById('contadorProgreso');
-          
-          if (barraProgreso) {
-            barraProgreso.style.width = porcentaje + '%';
-            barraProgreso.textContent = porcentaje + '%';
-          }
-          if (porcentajeText) porcentajeText.textContent = porcentaje + '%';
-          if (contadorProgreso) contadorProgreso.textContent = `${i + 1} / ${elementosAEliminar.length} elementos eliminados`;
-          
-          await new Promise(r => setTimeout(r, 50));
-        }
-        
-        confirmDiv.innerHTML = `
-          <div style="background:#d4edda; padding:12px; border-radius:8px; color:#155724;">
-            ✓ Eliminación completada<br>
-            <strong>Categoría:</strong> ${categoria}<br>
-            <strong>Total:</strong> ${elementosAEliminar.length}<br>
-            <strong>Eliminados:</strong> ${eliminados}<br>
-            <strong>Errores:</strong> ${errores}<br>
-            <button onclick="cancelarEliminar(); cargarInventario();" style="background:#4caf50; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin-top:10px;">Cerrar</button>
-          </div>
-        `;
-        cargarInventario();
-      } catch (e) {
-        alert('Error al eliminar por categoría: ' + e.message);
       }
     }
 
@@ -1105,13 +1635,136 @@
       const data = await res.json().catch(()=>({}));
       if (res.ok && data.ok) {
         alert(`✅ Importados: ${data.creados} | Actualizados: ${data.actualizados || 0}`);
-        cargarInventario();
+        cargarRecursos();
       } else {
         alert('❌ ' + (data.error || 'No se pudo importar'));
       }
     });
 
-    document.getElementById('btnBuscar')?.addEventListener('click', cargarInventario);
+    document.getElementById('btnBuscar')?.addEventListener('click', cargarRecursos);
+    document.getElementById('btnLimpiarFiltros')?.addEventListener('click', resetFiltrosInventario);
+
+    document.querySelectorAll('#inventoryFilters .chip').forEach(chip => {
+      chip.addEventListener('click', () => filtrarPorTipo(chip.dataset.filter || 'todos'));
+    });
+
+    const editorTabs = document.getElementById('editorTabs');
+    if (editorTabs) {
+      editorTabs.addEventListener('click', (event) => {
+        const targetBtn = event.target.closest('button[data-target]');
+        if (!targetBtn) return;
+        editorTabs.querySelectorAll('button').forEach(btn => {
+          btn.classList.toggle('is-active', btn === targetBtn);
+        });
+        const objetivo = targetBtn.dataset.target;
+        document.querySelectorAll('.resource-editor form').forEach(form => {
+          form.style.display = form.id === objetivo ? '' : 'none';
+        });
+      });
+    }
+
+    const formLibro = document.getElementById('formLibro');
+    if (formLibro) {
+      formLibro.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(formLibro);
+        const unidades = Math.max(1, parseInt(formData.get('stock') || '1', 10));
+        formData.set('stock', unidades);
+        formData.set('cantidad_disponible', unidades);
+        formData.set('cantidad_prestado', 0);
+        const autor = (formData.get('autor') || '').toString().trim();
+        if (!autor) {
+          Swal.fire({ icon: 'warning', title: 'Falta información', text: 'Añade el autor del libro antes de guardar.' });
+          return;
+        }
+        const imagenInput = formLibro.querySelector('input[name="imagen"]');
+        if (imagenInput && (!imagenInput.files || imagenInput.files.length === 0)) {
+          formData.delete('imagen');
+        }
+        try {
+          const res = await fetch('/api/libros', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok) {
+            Swal.fire({ icon: 'success', title: 'Libro guardado', timer: 2200, showConfirmButton: false });
+            formLibro.reset();
+            formLibro.querySelector('input[name="stock"]').value = 1;
+            formLibro.querySelector('input[name="cantidad_disponible"]').value = 1;
+            formLibro.querySelector('input[name="cantidad_prestado"]').value = 0;
+            cargarRecursos();
+          } else {
+            Swal.fire({ icon: 'error', title: 'No se pudo registrar', text: data.error || 'Revisa los datos e inténtalo nuevamente.' });
+          }
+        } catch (error) {
+          Swal.fire({ icon: 'error', title: 'Error de conexión', text: error.message });
+        }
+      });
+    }
+
+    const formPortatil = document.getElementById('formPortatil');
+    if (formPortatil) {
+      formPortatil.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(formPortatil);
+        const codigoInterno = (formData.get('codigo_interno') || '').toString().trim();
+        const numeroSerie = (formData.get('numero_serie') || '').toString().trim();
+        const placaSena = (formData.get('placa_sena') || '').toString().trim();
+        if (!codigoInterno || !numeroSerie || !placaSena) {
+          Swal.fire({ icon: 'warning', title: 'Datos incompletos', text: 'Ingresa código interno, número de serie y placa SENA.' });
+          return;
+        }
+        const unidades = Math.max(1, parseInt(formData.get('stock') || '1', 10));
+        formData.set('stock', unidades);
+        formData.set('cantidad_disponible', unidades);
+        formData.set('cantidad_prestado', 0);
+        formData.set('codigo_inventario', codigoInterno);
+        formData.set('isbn', numeroSerie);
+        formData.set('editorial', placaSena);
+        const estado = (formData.get('estado_disponibilidad') || 'Disponible').toString();
+        formData.set('estado_disponibilidad', estado);
+        formData.set('estado_elemento', estado === 'Disponible' ? 'Operativo' : 'No disponible');
+        const descripcionManual = (formData.get('descripcion') || '').toString().trim();
+        if (!descripcionManual) {
+          const resumen = [
+            `Código interno: ${codigoInterno}`,
+            `Número de serie: ${numeroSerie}`,
+            `Placa SENA: ${placaSena}`
+          ];
+          const marca = (formData.get('marca') || '').toString().trim();
+          const modelo = (formData.get('modelo') || '').toString().trim();
+          const especificaciones = (formData.get('especificaciones') || '').toString().trim();
+          if (marca) resumen.push(`Marca: ${marca}`);
+          if (modelo) resumen.push(`Modelo: ${modelo}`);
+          if (especificaciones) resumen.push(especificaciones);
+          formData.set('descripcion', resumen.join('\n'));
+        }
+        const imagenInput = formPortatil.querySelector('input[name="imagen"]');
+        if (imagenInput && (!imagenInput.files || imagenInput.files.length === 0)) {
+          formData.delete('imagen');
+        }
+        try {
+          const res = await fetch('/api/libros', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok) {
+            Swal.fire({ icon: 'success', title: 'Portátil guardado', timer: 2200, showConfirmButton: false });
+            formPortatil.reset();
+            formPortatil.querySelector('input[name="stock"]').value = 1;
+            formPortatil.querySelector('input[name="cantidad_disponible"]').value = 1;
+            formPortatil.querySelector('input[name="cantidad_prestado"]').value = 0;
+            cargarRecursos();
+          } else {
+            Swal.fire({ icon: 'error', title: 'No se pudo registrar', text: data.error || 'Revisa los datos e inténtalo nuevamente.' });
+          }
+        } catch (error) {
+          Swal.fire({ icon: 'error', title: 'Error de conexión', text: error.message });
+        }
+      });
+    }
 
     // Funciones de gestión de usuarios
     async function cargarUsuarios() {
@@ -1133,7 +1786,8 @@
           card.style.border = '1px solid #e1e8ed';
           card.style.borderRadius = '8px';
           card.style.marginBottom = '12px';
-          const roleBadge = u.role === 'admin' ? '<span style="background:#f44336; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">ADMIN</span>' : '<span style="background:#4caf50; color:white; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">USUARIO</span>';
+          const rolVisible = (u.tipo_usuario || (u.role === 'admin' ? 'Administrador' : 'Usuario')).toString();
+          const roleBadge = `<span class="pill-badge">${rolVisible.toUpperCase()}</span>`;
           card.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
               <div style="flex:1;">
@@ -1143,13 +1797,16 @@
                 <div style="color:#666; font-size:13px;">
                   <div>🆔 Documento: ${u.documento}</div>
                   <div>👤 Username: ${u.username}</div>
+                  ${u.telefono ? `<div>📱 Teléfono: ${u.telefono}</div>` : ''}
                   ${u.correo ? `<div>✉️ Correo: ${u.correo}</div>` : ''}
                   ${u.numero_ficha ? `<div>📋 Ficha: ${u.numero_ficha}</div>` : ''}
+                  ${u.programa_formacion ? `<div>🎓 Programa: ${u.programa_formacion}</div>` : ''}
+                  ${u.canal_contacto ? `<div>📡 Contacto preferido: ${u.canal_contacto}</div>` : ''}
                   <div style="margin-top:4px; font-size:11px; color:#999;">Registrado: ${u.creado_en ? new Date(u.creado_en).toLocaleDateString('es-ES') : 'N/A'}</div>
                 </div>
               </div>
               <div style="display:flex; gap:8px;">
-                <button onclick="editarUsuario('${u.id}', '${u.nombre.replace(/'/g, "\\'")}', '${u.documento}', '${u.correo || ''}', '${u.username}', '${u.role}')" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">✏️ Editar</button>
+                <button onclick="editarUsuario('${u.id}')" style="background:#2196f3; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">✏️ Editar</button>
                 ${u.username !== 'admin' ? `<button onclick="eliminarUsuario('${u.id}', '${u.nombre.replace(/'/g, "\\'")}')" style="background:#dc3545; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">🗑️ Eliminar</button>` : ''}
               </div>
             </div>`;
@@ -1175,32 +1832,59 @@
       document.getElementById('usuarioIdEdit').value = '';
       document.getElementById('usuarioPassword').required = true;
       document.getElementById('passwordLabel').textContent = '(requerida)';
+      document.getElementById('usuarioRol').value = '';
+      document.getElementById('usuarioCanalPreferido').value = 'correo';
+      document.getElementById('usuarioResetear').checked = false;
       document.getElementById('modalUsuario').style.display = 'flex';
     }
 
-    function editarUsuario(id, nombre, documento, correo, username, role) {
-      document.getElementById('modalUsuarioTitulo').textContent = 'Editar Usuario';
-      document.getElementById('usuarioIdEdit').value = id;
-      document.getElementById('usuarioNombre').value = nombre;
-      document.getElementById('usuarioDocumento').value = documento;
-      document.getElementById('usuarioCorreo').value = correo || '';
-      document.getElementById('usuarioUsername').value = username;
-      document.getElementById('usuarioRole').value = role;
-      document.getElementById('usuarioPassword').value = '';
-      document.getElementById('usuarioPassword').required = false;
-      document.getElementById('passwordLabel').textContent = '(dejar vacío para no cambiar)';
-      document.getElementById('modalUsuario').style.display = 'flex';
+    async function editarUsuario(id) {
+      try {
+        const res = await fetch(`/api/usuarios/${id}`);
+        if (!res.ok) {
+          alert('No se pudo obtener la información del usuario');
+          return;
+        }
+        const usuario = await res.json();
+        document.getElementById('modalUsuarioTitulo').textContent = 'Editar Usuario';
+        document.getElementById('usuarioIdEdit').value = usuario.id;
+        document.getElementById('usuarioNombre').value = usuario.nombre || '';
+        document.getElementById('usuarioDocumento').value = usuario.documento || '';
+        document.getElementById('usuarioCorreo').value = usuario.correo || '';
+        document.getElementById('usuarioTelefono').value = usuario.telefono || '';
+        document.getElementById('usuarioPrograma').value = usuario.programa_formacion || usuario.programa || '';
+        document.getElementById('usuarioFicha').value = usuario.numero_ficha || '';
+        document.getElementById('usuarioUsername').value = usuario.username || '';
+        document.getElementById('usuarioRol').value = usuario.tipo_usuario || (usuario.role === 'admin' ? 'administrativo' : 'aprendiz');
+        document.getElementById('usuarioCanalPreferido').value = usuario.canal_contacto || 'correo';
+        document.getElementById('usuarioPassword').value = '';
+        document.getElementById('usuarioPassword').required = false;
+        document.getElementById('usuarioResetear').checked = false;
+        document.getElementById('passwordLabel').textContent = '(dejar vacío para no cambiar)';
+        document.getElementById('modalUsuario').style.display = 'flex';
+      } catch (error) {
+        console.error(error);
+        alert('Error cargando la información del usuario');
+      }
     }
 
     async function guardarUsuario(e) {
       e.preventDefault();
       const id = document.getElementById('usuarioIdEdit').value;
+      const rolSeleccionado = document.getElementById('usuarioRol').value;
+      const rolSistema = (rolSeleccionado === 'admin' || rolSeleccionado === 'administrativo') ? 'admin' : 'user';
       const data = {
         nombre: document.getElementById('usuarioNombre').value,
         documento: document.getElementById('usuarioDocumento').value,
         correo: document.getElementById('usuarioCorreo').value,
+        telefono: document.getElementById('usuarioTelefono').value,
+        programa_formacion: document.getElementById('usuarioPrograma').value,
+        numero_ficha: document.getElementById('usuarioFicha').value,
+        canal_contacto: document.getElementById('usuarioCanalPreferido').value,
+        tipo_usuario: rolSeleccionado || 'aprendiz',
         username: document.getElementById('usuarioUsername').value,
-        role: document.getElementById('usuarioRole').value
+        role: rolSistema,
+        reset_password: document.getElementById('usuarioResetear').checked
       };
       
       const password = document.getElementById('usuarioPassword').value;

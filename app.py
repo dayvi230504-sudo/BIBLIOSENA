@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from flask import Flask, jsonify, request, send_from_directory, render_template
 import csv
@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base, scoped_session
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import os
 import uuid
 
@@ -173,6 +174,219 @@ def now_iso() -> str:
     return datetime.utcnow().isoformat() + 'Z'
 
 
+def _load_font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    """Intentar cargar una fuente TrueType común; si falla, usar la fuente por defecto."""
+    candidate_paths = [
+        "arialbd.ttf" if bold else "arial.ttf",
+        os.path.join(os.environ.get("WINDIR", ""), "Fonts", "arialbd.ttf" if bold else "arial.ttf"),
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    for path in candidate_paths:
+        if path and os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size=size)
+            except OSError:
+                continue
+    return ImageFont.load_default()
+
+
+def _wrap_text_for_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_width: int) -> List[str]:
+    """Dividir texto en líneas que se ajusten al ancho máximo."""
+    if not text:
+        return []
+    lines: List[str] = []
+    for paragraph in text.splitlines() or [""]:
+        words = paragraph.split()
+        if not words:
+            lines.append("")
+            continue
+        current_line = words[0]
+        for word in words[1:]:
+            candidate = f"{current_line} {word}"
+            bbox = draw.textbbox((0, 0), candidate, font=font)
+            if bbox[2] - bbox[0] <= max_width:
+                current_line = candidate
+            else:
+                lines.append(current_line)
+                current_line = word
+        lines.append(current_line)
+    return lines
+
+
+def _select_palette(seed_text: str) -> tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]:
+    palettes = [
+        ((78, 84, 200), (126, 214, 223), (255, 255, 255)),
+        ((118, 75, 162), (236, 132, 209), (255, 230, 255)),
+        ((2, 170, 176), (0, 205, 172), (255, 255, 255)),
+        ((255, 140, 66), (255, 210, 128), (40, 40, 40)),
+        ((77, 160, 176), (211, 236, 221), (255, 255, 255)),
+        ((25, 118, 210), (187, 222, 251), (255, 255, 255)),
+    ]
+    if not seed_text:
+        return palettes[0]
+    seed = sum(ord(c) for c in seed_text)
+    return palettes[seed % len(palettes)]
+
+
+def _create_gradient_background(width: int, height: int, colors: tuple[tuple[int, int, int], tuple[int, int, int]]) -> Image.Image:
+    base = Image.new("RGB", (1, height))
+    top, bottom = colors
+    for y in range(height):
+        ratio = y / max(height - 1, 1)
+        r = int(top[0] * (1 - ratio) + bottom[0] * ratio)
+        g = int(top[1] * (1 - ratio) + bottom[1] * ratio)
+        b = int(top[2] * (1 - ratio) + bottom[2] * ratio)
+        base.putpixel((0, y), (r, g, b))
+    resample = getattr(Image, "Resampling", Image)
+    return base.resize((width, height), resample.BICUBIC)
+
+
+def _add_overlay_elements(image: Image.Image, accent: tuple[int, int, int], seed: int) -> Image.Image:
+    width, height = image.size
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    accent_soft = (*accent, 120)
+    accent_bold = (*accent, 180)
+
+    # Elementos geométricos principales
+    draw.ellipse(
+        (-width * 0.2, height * 0.1, width * 0.6, height * 0.9),
+        fill=accent_soft,
+    )
+    draw.rounded_rectangle(
+        (width * 0.35, height * 0.05, width * 1.05, height * 0.55),
+        radius=120,
+        fill=accent_bold,
+    )
+
+    # Líneas diagonales translúcidas
+    line_color = (*accent, 90)
+    step = 40
+    for offset in range(-height, width, step):
+        draw.line(
+            [(offset, 0), (offset + height, height)],
+            fill=line_color,
+            width=3,
+        )
+
+    # Textura suave con ruido
+    noise = Image.effect_noise((width, height), 8).convert("L")
+    noise = noise.filter(ImageFilter.GaussianBlur(radius=1.5))
+    noise_colored = Image.merge(
+        "RGBA",
+        (
+            noise,
+            noise,
+            noise,
+            Image.new("L", (width, height), 30),
+        ),
+    )
+
+    composed = Image.alpha_composite(image.convert("RGBA"), overlay)
+    composed = Image.alpha_composite(composed, noise_colored)
+    return composed.convert("RGB")
+
+
+def generar_portada(nombre_libro: str, autor: str = "", output_path: Optional[str] = None) -> str:
+    """
+    Genera una imagen de portada simple con el título y autor del libro.
+
+    Retorna la ruta relativa donde se guarda la imagen (dentro de uploads).
+    """
+    titulo = (nombre_libro or "").strip() or "Libro sin título"
+    autor_txt = (autor or "").strip()
+
+    ancho, alto = 400, 600
+    palette_top, palette_bottom, text_color = _select_palette(titulo)
+    imagen = _create_gradient_background(ancho, alto, (palette_top, palette_bottom))
+    imagen = _add_overlay_elements(imagen, palette_top, sum(ord(c) for c in titulo))
+
+    draw = ImageDraw.Draw(imagen)
+
+    font_titulo = _load_font(32, bold=True)
+    font_autor = _load_font(20)
+
+    margen_horizontal = 40
+    disponible = ancho - 2 * margen_horizontal
+    lineas_titulo = _wrap_text_for_width(draw, titulo, font_titulo, disponible)
+    lineas_autor = _wrap_text_for_width(draw, autor_txt, font_autor, disponible) if autor_txt else []
+
+    def _total_height(lines: List[str], font: ImageFont.ImageFont) -> int:
+        if not lines:
+            return 0
+        alturas = []
+        for linea in lines:
+            bbox = draw.textbbox((0, 0), linea, font=font)
+            alturas.append(bbox[3] - bbox[1])
+        return sum(alturas) + (len(lines) - 1) * 8
+
+    altura_titulo = _total_height(lineas_titulo, font_titulo)
+    altura_autor = _total_height(lineas_autor, font_autor) if lineas_autor else 0
+    separacion = 24 if lineas_autor else 0
+    altura_total = altura_titulo + separacion + altura_autor
+
+    y_inicio = max(int((alto - altura_total) / 2), margen_horizontal)
+    y = y_inicio
+
+    for linea in lineas_titulo:
+        bbox = draw.textbbox((0, 0), linea, font=font_titulo)
+        ancho_linea = bbox[2] - bbox[0]
+        alto_linea = bbox[3] - bbox[1]
+        x = (ancho - ancho_linea) / 2
+        draw.text((x, y), linea, fill=text_color, font=font_titulo)
+        y += alto_linea + 8
+
+    if lineas_autor:
+        y += separacion - 8  # ajustar porque el último bucle sumó 8 extra
+        for linea in lineas_autor:
+            bbox = draw.textbbox((0, 0), linea, font=font_autor)
+            ancho_linea = bbox[2] - bbox[0]
+            alto_linea = bbox[3] - bbox[1]
+            x = (ancho - ancho_linea) / 2
+            draw.text((x, y), linea, fill=tuple(min(255, int(c * 0.92)) for c in text_color), font=font_autor)
+            y += alto_linea + 6
+
+    # Añadir monograma decorativo
+    iniciales = "".join(word[0] for word in titulo.split()[:2]).upper() or "BK"
+    monograma_font = _load_font(18, bold=True)
+    monograma_text = iniciales[:2]
+    monograma_bbox = draw.textbbox((0, 0), monograma_text, font=monograma_font)
+    monograma_width = monograma_bbox[2] - monograma_bbox[0]
+    monograma_height = monograma_bbox[3] - monograma_bbox[1]
+    monograma_padding = 14
+    draw.rounded_rectangle(
+        (
+            ancho - monograma_width - monograma_padding * 2 - 24,
+            24,
+            ancho - 24,
+            24 + monograma_height + monograma_padding * 2,
+        ),
+        radius=18,
+        fill=tuple(min(255, c + 30) for c in palette_top),
+    )
+    draw.text(
+        (
+            ancho - monograma_width - monograma_padding - 24,
+            24 + monograma_padding - 2,
+        ),
+        monograma_text,
+        fill=(255, 255, 255),
+        font=monograma_font,
+    )
+
+    uploads_dir = os.path.join(app.root_path, "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+
+    if not output_path:
+        filename = f"portada_{uuid.uuid4().hex}.jpg"
+        output_path = os.path.join(uploads_dir, filename)
+
+    imagen.save(output_path, "JPEG", quality=90, optimize=True, progressive=True)
+
+    return f"uploads/{os.path.basename(output_path)}"
+
+
 def libro_from_request_db(data: Dict[str, Any]) -> LibroDB:
     now = datetime.utcnow()
     # Detectar si es un equipo/PC o un libro
@@ -262,7 +476,7 @@ def libro_from_request_db(data: Dict[str, Any]) -> LibroDB:
     if autor is None:
         autor = ''
     
-    return LibroDB(
+    libro = LibroDB(
         id=str(uuid.uuid4()),
         titulo=data.get('titulo', '').strip(),
         autor=autor,  # Cadena vacía para equipos, valor normal para libros
@@ -282,6 +496,16 @@ def libro_from_request_db(data: Dict[str, Any]) -> LibroDB:
         creado_en=now,
         actualizado_en=now,
     )
+
+    # Generar portada automática si no se proporcionó imagen
+    if not libro.imagen and libro.titulo:
+        try:
+            libro.imagen = generar_portada(libro.titulo, autor or '')
+        except Exception:
+            # Mantener imagen en None si falla la generación para no bloquear el flujo
+            libro.imagen = None
+
+    return libro
 
 
 # -------------------------------
@@ -716,7 +940,58 @@ def libros_obtener(libro_id: str):
         r = db.get(LibroDB, libro_id)
         if not r:
             return ("No encontrado", 404)
-        item = {**{k: getattr(r, k) for k in ['id','titulo','autor','isbn','editorial','anio_publicacion','categoria','subcategoria','descripcion','estado_disponibilidad','estado_elemento','stock','cantidad_disponible','cantidad_prestado','imagen']}, 'creado_en': r.creado_en.isoformat()+'Z', 'actualizado_en': r.actualizado_en.isoformat()+'Z'}
+
+        # Calcular información agregada para todas las copias relacionadas
+        if r.codigo_inventario and r.codigo_inventario.strip():
+            copias_relacionadas = db.query(LibroDB).filter(
+                LibroDB.codigo_inventario == r.codigo_inventario
+            ).all()
+        else:
+            titulo_norm = (r.titulo or '').strip()
+            autor_norm = (r.autor or '').strip()
+            isbn_norm = (r.isbn or '').strip()
+            copias_relacionadas = db.query(LibroDB).filter(
+                LibroDB.titulo == titulo_norm,
+                LibroDB.autor == autor_norm,
+                LibroDB.isbn == isbn_norm,
+                ((LibroDB.codigo_inventario == None) | (LibroDB.codigo_inventario == ''))
+            ).all()
+
+        if copias_relacionadas:
+            stock_total = sum(c.stock or 0 for c in copias_relacionadas)
+            cantidad_disponible_total = sum(c.cantidad_disponible or 0 for c in copias_relacionadas)
+            cantidad_prestado_total = sum(c.cantidad_prestado or 0 for c in copias_relacionadas)
+        else:
+            stock_total = r.stock or 0
+            cantidad_disponible_total = r.cantidad_disponible or 0
+            cantidad_prestado_total = r.cantidad_prestado or 0
+
+        item = {
+            **{k: getattr(r, k) for k in [
+                'id',
+                'titulo',
+                'autor',
+                'isbn',
+                'editorial',
+                'anio_publicacion',
+                'categoria',
+                'subcategoria',
+                'descripcion',
+                'estado_disponibilidad',
+                'estado_elemento',
+                'stock',
+                'cantidad_disponible',
+                'cantidad_prestado',
+                'imagen',
+                'codigo_inventario',
+            ]},
+            'creado_en': r.creado_en.isoformat()+'Z',
+            'actualizado_en': r.actualizado_en.isoformat()+'Z',
+            'stock_total': stock_total,
+            'cantidad_disponible_total': cantidad_disponible_total,
+            'cantidad_prestado_total': cantidad_prestado_total,
+            'copias_relacionadas': [c.id for c in copias_relacionadas] if copias_relacionadas else [r.id],
+        }
         return jsonify(item)
     finally:
         db.close()
@@ -1135,6 +1410,11 @@ def import_csv():
                     existente.stock = int((existente.stock or 0) + 1)
                     existente.cantidad_disponible = int((existente.cantidad_disponible or 0) + 1)
                     existente.actualizado_en = now
+                    if not existente.imagen:
+                        try:
+                            existente.imagen = generar_portada(titulo, autor)
+                        except Exception:
+                            pass
                     actualizados += 1
                 else:
                     nuevo = LibroDB(
@@ -1157,6 +1437,10 @@ def import_csv():
                         creado_en=now,
                         actualizado_en=now,
                     )
+                    try:
+                        nuevo.imagen = generar_portada(titulo, autor)
+                    except Exception:
+                        nuevo.imagen = None
                     db.add(nuevo)
                     creados += 1
             else:

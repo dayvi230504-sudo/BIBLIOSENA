@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="600" rx="28" ry="28" fill="url(#grad)" />
+  <g fill="#ffffff" opacity="0.85">
+    <rect x="80" y="160" width="240" height="16" rx="8" />
+    <rect x="80" y="210" width="200" height="16" rx="8" />
+    <rect x="80" y="260" width="186" height="16" rx="8" />
+    <rect x="80" y="340" width="240" height="10" rx="5" />
+    <rect x="80" y="368" width="220" height="10" rx="5" />
+    <rect x="80" y="396" width="180" height="10" rx="5" />
+    <rect x="80" y="424" width="220" height="10" rx="5" />
+    <rect x="80" y="452" width="200" height="10" rx="5" />
+  </g>
+  <circle cx="200" cy="110" r="46" fill="rgba(255,255,255,0.18)" />
+  <circle cx="200" cy="110" r="30" fill="rgba(255,255,255,0.32)" />
+  <path fill="#ffffff" opacity="0.85" d="M210 102a10 10 0 1 0-20 0a10 10 0 0 0 20 0zm-24 28v-6c0-3.3 2.7-6 6-6h20c3.3 0 6 2.7 6 6v6z"/>
+</svg>
+
+
+
+
