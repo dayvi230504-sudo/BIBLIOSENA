@@ -914,8 +914,9 @@
     <!-- Sección: Tipos de Sanción -->
     <div id="section-sanciones" class="section-content">
       <div class="bot-busqueda">
-        <strong>⚠️ Gestión de Tipos de Sanción</strong>
+        <strong>🔍 Búsqueda:</strong>
         <div style="display:flex; gap:8px; margin-top:8px;">
+          <input type="text" id="buscarSancionTipos" placeholder="Buscar por código o descripción..." style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;" onkeyup="filtrarSancionTipos()" />
           <button onclick="abrirModalSancionTipo()" style="background:#f44336; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">➕ Agregar Tipo de Sanción</button>
         </div>
       </div>
@@ -1947,6 +1948,17 @@
 
     // ==================== GESTIÓN DE TIPOS DE SANCIÓN ====================
     
+    function filtrarSancionTipos() {
+      const busqueda = document.getElementById('buscarSancionTipos').value.toLowerCase();
+      const cards = document.querySelectorAll('.sancion-tipo-card');
+      cards.forEach(card => {
+        const codigo = card.getAttribute('data-codigo') || '';
+        const descripcion = card.getAttribute('data-descripcion') || '';
+        const textoCompleto = (codigo + ' ' + descripcion).toLowerCase();
+        card.style.display = textoCompleto.includes(busqueda) ? 'block' : 'none';
+      });
+    }
+    
     // Contador de caracteres para descripción (se inicializa cuando se abre el modal)
     function inicializarContadorDescripcion() {
       const descripcionInput = document.getElementById('sancionTipoDescripcion');
@@ -1988,7 +2000,7 @@
         let html = '<div style="display:grid; gap:12px;">';
         tipos.forEach(tipo => {
           html += `
-            <div style="background:white; padding:16px; border-radius:8px; border-left:4px solid #f44336; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+            <div class="sancion-tipo-card" style="background:white; padding:16px; border-radius:8px; border-left:4px solid #f44336; box-shadow:0 2px 8px rgba(0,0,0,0.1);" data-codigo="${tipo.codigo.toLowerCase()}" data-descripcion="${tipo.descripcion.toLowerCase()}">
               <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
                 <div>
                   <h4 style="margin:0 0 4px 0; color:#333; font-size:18px;">
@@ -2010,6 +2022,12 @@
         });
         html += '</div>';
         lista.innerHTML = html;
+        
+        // Aplicar filtro si hay un valor en el campo de búsqueda
+        const busquedaInput = document.getElementById('buscarSancionTipos');
+        if (busquedaInput && busquedaInput.value.trim()) {
+          filtrarSancionTipos();
+        }
       } catch (e) {
         lista.innerHTML = '<div style="padding:20px; color:#f44336;">Error de conexión al cargar tipos de sanción</div>';
         console.error('Error:', e);
