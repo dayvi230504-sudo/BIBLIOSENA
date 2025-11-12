@@ -304,6 +304,17 @@
   </main>
 
   <script>
+    function mostrarSwal(icono, titulo, texto, opciones = {}) {
+      return Swal.fire({
+        icon: icono,
+        title: titulo,
+        text: texto,
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#3085d6',
+        ...opciones
+      });
+    }
+
     // Obtener ID del usuario
     function obtenerMiId() {
       const miIdGuardado = localStorage.getItem('miId');
@@ -328,12 +339,44 @@
         } catch (e) {}
       }
       
-      alert('Necesitas iniciar sesión primero');
-      window.location.href = 'login.html';
+      mostrarSwal('warning', 'Inicia sesión', 'Necesitas iniciar sesión primero.')
+        .then(() => { window.location.href = 'login.html'; });
       return null;
     }
 
     const miId = obtenerMiId();
+
+    function escapeHtml(texto) {
+      if (texto === null || texto === undefined) return '';
+      return texto.toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function legibleDesdeCodigo(texto) {
+      if (!texto) return '';
+      return texto
+        .toString()
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .replace(/\b\w/g, letra => letra.toUpperCase())
+        .trim();
+    }
+
+    function formatearFecha(isoString) {
+      if (!isoString) return '';
+      try {
+        const fecha = new Date(isoString);
+        if (Number.isNaN(fecha.getTime())) return isoString;
+        return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+      } catch (error) {
+        return isoString;
+      }
+    }
 
     // Calcular fecha límite (7 días después del préstamo)
     function calcularFechaLimite(fechaPrestamo) {
@@ -402,8 +445,16 @@
           console.error('Error cargando préstamos:', e);
         }
         
-        // Cargar sanciones (por ahora vacío hasta implementar)
-        const sanciones = []; // TODO: Implementar endpoint de sanciones
+        // Cargar sanciones desde el nuevo endpoint
+        let sanciones = [];
+        try {
+          const resSanciones = await fetch(`/api/sanciones?id_usuario=${encodeURIComponent(miId)}`);
+          if (resSanciones.ok) {
+            sanciones = await resSanciones.json();
+          }
+        } catch (errorSancion) {
+          console.error('Error cargando sanciones del usuario:', errorSancion);
+        }
         
         // Actualizar resumen
         const activos = prestamos.filter(p => p.estado === 'aprobado');
@@ -411,11 +462,12 @@
           const limite = calcularFechaLimite(p.fecha_prestamo);
           return estaVencido(limite);
         });
+        const sancionesActivas = sanciones.filter(s => (s.estado || '').toLowerCase() === 'activa');
         
         document.getElementById('totalPrestamos').textContent = prestamos.length;
         document.getElementById('activosPrestamos').textContent = activos.length;
         document.getElementById('vencidosPrestamos').textContent = vencidos.length;
-        document.getElementById('sancionesPrestamos').textContent = sanciones.length;
+        document.getElementById('sancionesPrestamos').textContent = sancionesActivas.length;
         
         if (prestamos.length === 0) {
           lista.innerHTML = '<div class="loan-state-alert" style="background:#f5f9ff; border-color:rgba(102,126,234,0.25); color:#1c2751;">Aún no tienes préstamos registrados. Explora la biblioteca y solicita tu primer recurso.</div>';
@@ -425,6 +477,8 @@
         // Cargar información de los elementos
         let html = '';
         for (const prestamo of prestamos) {
+          const sancionesPrestamo = sanciones.filter(s => s.id_prestamo === prestamo.id);
+          const sancionesActivasPrestamo = sancionesPrestamo.filter(s => (s.estado || '').toLowerCase() === 'activa');
           let libro = prestamo.elemento || null;
           if (!libro) {
             const resLibro = await fetch(`/api/libros/${prestamo.id_elemento}`).catch(() => null);
@@ -487,6 +541,10 @@
             subcategoria || null,
             codigoInv ? `Código: ${codigoInv}` : null
           ].filter(Boolean).map(tag => `<span class="loan-tag">${tag}</span>`).join('');
+          const sancionBadge = sancionesPrestamo.length
+            ? `<span class="loan-tag" style="background:rgba(244,67,54,0.16); color:#b71c1c;">Sanciones: ${sancionesPrestamo.length}</span>`
+            : '';
+          const badgesHtml = [badges, sancionBadge].filter(Boolean).join('');
 
           let progressBlock = '';
           let alertBlock = '';
@@ -510,6 +568,33 @@
             progressBlock = `<div class="loan-card__progress"><span class="loan-progress-label">Esperando confirmación del administrador.</span></div>`;
           }
 
+          if (sancionesPrestamo.length && prestamo.estado !== 'pendiente') {
+            statusClass = 'loan-card__status--alert';
+            statusBadge = sancionesActivasPrestamo.length
+              ? `⚠️ Sanción vigente (${sancionesActivasPrestamo.length})`
+              : `ℹ️ Sanción registrada`;
+          }
+
+          const sancionResumen = sancionesPrestamo.map((s, index) => {
+            const causaNombre = escapeHtml(s.causa_legible || s.causa || `Causa #${index + 1}`);
+            const descripcion = s.causa_descripcion ? `<div style="margin-top:4px; color:#5f4339;">${escapeHtml(s.causa_descripcion)}</div>` : '';
+            const estado = (s.estado || '').toLowerCase() === 'resuelta' ? 'Resuelta' : 'Activa';
+            return `
+              <li style="margin-bottom:8px;">
+                <strong>${causaNombre}</strong> · ${estado}
+                ${descripcion}
+                ${s.observaciones ? `<div style="margin-top:4px; color:#795548;">📝 ${escapeHtml(s.observaciones)}</div>` : ''}
+              </li>
+            `;
+          }).join('');
+
+          const sancionBlock = sancionesPrestamo.length
+            ? `<div class="loan-state-alert critical" style="margin-top:14px;">
+                ⚠️ Este préstamo tiene ${sancionesPrestamo.length} sanción(es) asociada(s):
+                <ul style="margin:10px 0 0 18px; padding:0;">${sancionResumen}</ul>
+              </div>`
+            : '';
+
           const observaciones = prestamo.observaciones
             ? `<div class="loan-state-alert" style="background:#f5f5f5; border-color:rgba(102,126,234,0.25); color:#223250;">📝 ${prestamo.observaciones}</div>`
             : '';
@@ -520,7 +605,7 @@
               <div>
                   <h4 class="loan-card__title">${tituloElemento}</h4>
                   <div class="loan-card__tags">
-                    ${badges || '<span class="loan-tag">Sin metadatos</span>'}
+                    ${badgesHtml || '<span class="loan-tag">Sin metadatos</span>'}
               </div>
             </div>
                 <span class="loan-card__status ${statusClass}">${statusBadge}</span>
@@ -546,6 +631,7 @@
               </div>
               ${progressBlock}
               ${alertBlock}
+              ${sancionBlock}
               ${observaciones}
             </article>
           `;
@@ -570,17 +656,30 @@
       
       let html = '';
       for (const sancion of sanciones) {
-        const activa = (sancion.estado || '').toLowerCase() === 'activa';
+        const estado = (sancion.estado || '').toLowerCase();
+        const activa = estado === 'activa';
+        const etiquetaEstado = activa ? 'Activa' : 'Resuelta';
+        const tipoLabel = sancion.tipo_codigo
+          ? `${escapeHtml(sancion.tipo_codigo)} — ${escapeHtml(sancion.tipo_descripcion || '')}`
+          : escapeHtml(sancion.tipo_descripcion || 'Sanción registrada');
+        const causaTexto = escapeHtml(sancion.causa_legible || sancion.causa || 'Causa no especificada');
+        const descripcion = sancion.causa_descripcion ? `<div class="sanction-card__meta" style="margin-top:4px;">${escapeHtml(sancion.causa_descripcion)}</div>` : '';
+        const fechaInicio = sancion.fecha_inicio ? `<div class="sanction-card__meta"><strong>Desde:</strong> ${formatearFecha(sancion.fecha_inicio)}</div>` : '';
+        const fechaFin = sancion.fecha_fin ? `<div class="sanction-card__meta"><strong>Hasta:</strong> ${formatearFecha(sancion.fecha_fin)}</div>` : '';
+        const prestamo = sancion.id_prestamo ? `<div class="sanction-card__meta"><strong>Préstamo:</strong> ${escapeHtml(sancion.id_prestamo)}</div>` : '';
+        const observaciones = sancion.observaciones ? `<p style="margin-top:12px; color:#5f4339;">${escapeHtml(sancion.observaciones)}</p>` : '';
         html += `
           <article class="sanction-card">
-            <h4>${sancion.tipo_sancion || 'Sanción'}</h4>
+            <h4>${tipoLabel}</h4>
             <div class="sanction-card__meta">
-              <strong>Estado:</strong> ${sancion.estado || 'N/A'}${activa ? ' · Vigente' : ''}
+              <strong>Estado:</strong> ${etiquetaEstado}${activa ? ' · Vigente' : ''}
             </div>
-            ${sancion.causa_sancion ? `<div class="sanction-card__meta"><strong>Causa:</strong> ${sancion.causa_sancion}</div>` : ''}
-            ${sancion.fecha_inicio ? `<div class="sanction-card__meta"><strong>Desde:</strong> ${new Date(sancion.fecha_inicio).toLocaleDateString('es-ES')}</div>` : ''}
-            ${sancion.fecha_fin ? `<div class="sanction-card__meta"><strong>Hasta:</strong> ${new Date(sancion.fecha_fin).toLocaleDateString('es-ES')}</div>` : ''}
-            ${sancion.descripcion ? `<p style="margin-top:12px; color:#5f4339;">${sancion.descripcion}</p>` : ''}
+            <div class="sanction-card__meta"><strong>Causa:</strong> ${causaTexto}</div>
+            ${descripcion}
+            ${fechaInicio}
+            ${fechaFin}
+            ${prestamo}
+            ${observaciones}
           </article>
         `;
       }

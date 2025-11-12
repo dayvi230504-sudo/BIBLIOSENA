@@ -911,17 +911,53 @@
       <div id="listaUsuarios" style="margin-top:16px;"></div>
     </div>
 
-    <!-- Sección: Tipos de Sanción -->
+    <!-- Sección: Tipos y Registro de Sanciones -->
     <div id="section-sanciones" class="section-content">
       <div class="bot-busqueda">
-        <strong>🔍 Búsqueda:</strong>
-        <div style="display:flex; gap:8px; margin-top:8px;">
-          <input type="text" id="buscarSancionTipos" placeholder="Buscar por código o descripción..." style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;" onkeyup="filtrarSancionTipos()" />
-          <button onclick="abrirModalSancionTipo()" style="background:#f44336; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">➕ Agregar Tipo de Sanción</button>
+        <strong>⚠️ Gestión Integral de Sanciones</strong>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+          <input type="text" id="buscarSanciones" placeholder="Buscar sanciones por usuario, documento, tipo o causa..." style="flex:1; min-width:200px; padding:10px; border:1px solid #ddd; border-radius:6px;" oninput="filtrarSanciones()" />
+          <select id="filtroEstadoSancion" onchange="filtrarSanciones()" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <option value="">Todos los estados</option>
+            <option value="activa">Activas</option>
+            <option value="resuelta">Resueltas</option>
+          </select>
+          <button onclick="abrirModalSancion()" style="background:#f44336; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">➕ Registrar Sanción</button>
+          <button onclick="abrirModalSancionTipo()" style="background:#9c27b0; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">⚙️ Nuevo Tipo</button>
+          <button onclick="abrirModalSancionCausa(null, document.getElementById('sancionTipoSelect')?.value || null)" style="background:#3f51b5; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">📁 Nueva Causa</button>
         </div>
+        <small style="color:#666; font-size:12px; margin-top:6px; display:block;">Gestiona sanciones aplicadas a usuarios y administra los tipos (causas) disponibles.</small>
       </div>
-      <h3 style="border-left:4px solid #f44336; padding-left:12px;">⚠️ Tipos de Sanción Registrados</h3>
-      <div id="listaSancionTipos" style="margin-top:16px;"></div>
+
+      <div style="display:grid; gap:24px; grid-template-columns: minmax(0,1.6fr) minmax(0,1fr); align-items:start;">
+        <section style="background:white; border-radius:12px; border:1px solid #e0e0e0; padding:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+            <h3 style="margin:0; border-left:4px solid #f44336; padding-left:12px;">📋 Sanciones Registradas</h3>
+            <button onclick="cargarSanciones(true)" style="background:#eee; padding:8px 12px; border:none; border-radius:6px; cursor:pointer;">⟳ Actualizar</button>
+          </div>
+          <div id="listaSanciones" style="margin-top:16px;"></div>
+        </section>
+
+        <section style="background:white; border-radius:12px; border:1px solid #e0e0e0; padding:20px;">
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <h3 style="margin:0; border-left:4px solid #9c27b0; padding-left:12px; flex:1;">⚠️ Tipos de Sanción</h3>
+            <input type="text" id="buscarSancionTipos" placeholder="Buscar tipos..." style="flex:1; min-width:180px; padding:8px 10px; border:1px solid #ddd; border-radius:6px;" oninput="filtrarSancionTipos()" />
+          </div>
+          <div id="listaSancionTipos" style="margin-top:16px;"></div>
+          <div style="margin-top:24px; border-top:1px solid #ececec; padding-top:18px;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <h4 style="margin:0; padding-left:12px; border-left:4px solid #3f51b5; color:#3f51b5; flex:1;">🎯 Causas registradas</h4>
+              <select id="filtroTipoCausas" style="flex:1; min-width:200px; padding:8px 10px; border:1px solid #ddd; border-radius:6px;" onchange="renderSancionCausas()">
+                <option value="">Todos los tipos</option>
+              </select>
+              <button type="button" onclick="abrirModalSancionCausa(null, document.getElementById('filtroTipoCausas').value)" style="background:#3f51b5; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">➕ Nueva causa</button>
+              <button type="button" onclick="cargarSancionCausas(true)" style="background:#e0e0e0; color:#333; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">⟳ Actualizar</button>
+            </div>
+            <small style="color:#666; display:block; margin-top:8px;">Administra el catálogo de causas por tipo y mantenlo sincronizado con el formulario de sanciones.</small>
+            <div id="listaSancionCausas" style="margin-top:14px;"></div>
+          </div>
+        </section>
+      </div>
     </div>
 
     <!-- Modal para agregar/editar tipo de sanción -->
@@ -943,6 +979,99 @@
           <div style="display:flex; gap:12px; justify-content:flex-end;">
             <button type="button" onclick="cerrarModalSancionTipo()" style="background:#757575; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Cancelar</button>
             <button type="submit" style="background:#f44336; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">💾 Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal para registrar/editar causa de sanción -->
+    <div id="modalSancionCausa" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:white; padding:30px; border-radius:12px; max-width:520px; width:92%; max-height:90vh; overflow-y:auto;">
+        <h3 id="modalSancionCausaTitulo" style="margin-top:0; color:#3f51b5;">📁 Nueva causa de sanción</h3>
+        <form id="formSancionCausa" onsubmit="guardarSancionCausa(event)" style="display:grid; gap:16px;">
+          <input type="hidden" id="sancionCausaId" />
+          <div>
+            <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Tipo de sanción *</label>
+            <select id="sancionCausaTipoSelect" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+              <option value="">Selecciona el tipo...</option>
+            </select>
+            <small style="color:#777; display:block; margin-top:4px;">Cada causa pertenece a un único tipo de sanción.</small>
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Nombre de la causa *</label>
+            <input id="sancionCausaNombre" required placeholder="Ej: INCUMPLIMIENTO_HORARIO" minlength="3" maxlength="120" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; text-transform:uppercase;" />
+            <small style="color:#777; display:block; margin-top:4px;">Se normaliza en mayúsculas y se reemplazan espacios por guiones bajos (RB3, RB4).</small>
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Descripción detallada *</label>
+            <textarea id="sancionCausaDescripcion" required minlength="5" maxlength="150" placeholder="Describe la causa entre 5 y 150 caracteres" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; min-height:90px; resize:vertical;"></textarea>
+            <small id="contadorDescripcionCausa" style="color:#777; display:block; margin-top:4px;">0/150</small>
+          </div>
+          <div style="display:flex; gap:12px; justify-content:flex-end;">
+            <button type="button" onclick="cerrarModalSancionCausa()" style="background:#757575; color:white; padding:10px 18px; border:none; border-radius:6px; cursor:pointer;">Cancelar</button>
+            <button type="submit" style="background:#3f51b5; color:white; padding:10px 22px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">💾 Guardar causa</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal para registrar/editar sanción -->
+    <div id="modalSancion" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:white; padding:30px; border-radius:12px; max-width:640px; width:95%; max-height:90vh; overflow-y:auto;">
+        <h3 id="modalSancionTitulo" style="margin-top:0; color:#f44336;">➕ Registrar Sanción</h3>
+        <form id="formSancion" onsubmit="guardarSancion(event)" style="display:grid; gap:16px;">
+          <input type="hidden" id="sancionId" />
+          <div>
+            <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Usuario *</label>
+            <select id="sancionUsuarioSelect" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+              <option value="">Selecciona un usuario...</option>
+            </select>
+            <small style="color:#777; display:block; margin-top:4px;">Se muestran los usuarios registrados en el sistema.</small>
+            <div id="sancionUsuarioInfo" style="margin-top:8px; font-size:12px; color:#555;"></div>
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Tipo de sanción *</label>
+            <select id="sancionTipoSelect" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+              <option value="">Selecciona el tipo...</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Causa o motivo *</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <select id="sancionCausaSelect" required style="flex:1; min-width:220px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                <option value="">Selecciona la causa...</option>
+              </select>
+              <button type="button" onclick="abrirModalSancionCausa(null, document.getElementById('sancionTipoSelect').value)" style="background:#3f51b5; color:white; padding:9px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">➕</button>
+              <button type="button" onclick="cargarSancionCausas(true)" style="background:#e0e0e0; color:#333; padding:9px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">⟳</button>
+            </div>
+            <small id="sancionCausaInfo" style="color:#777; display:block; margin-top:4px;">Selecciona un tipo para ver las causas disponibles.</small>
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Observaciones adicionales</label>
+            <textarea id="sancionObservaciones" placeholder="Detalles adicionales, acuerdos, responsables..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; min-height:80px; resize:vertical;"></textarea>
+          </div>
+          <div style="display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+            <label style="font-size:13px; color:#333;">Fecha de inicio *
+              <input type="date" id="sancionFechaInicio" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;" />
+            </label>
+            <label style="font-size:13px; color:#333;">Fecha de fin
+              <input type="date" id="sancionFechaFin" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;" />
+            </label>
+            <label style="font-size:13px; color:#333;">Estado
+              <select id="sancionEstado" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                <option value="activa">Activa</option>
+                <option value="resuelta">Resuelta</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">Préstamo relacionado (opcional)</label>
+            <input type="text" id="sancionPrestamoId" placeholder="Ingresa el ID del préstamo asociado (si aplica)" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;" />
+            <small style="color:#777; display:block; margin-top:4px;">Puedes vincular la sanción a un préstamo aprobado o pendiente.</small>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:12px;">
+            <button type="button" onclick="cerrarModalSancion()" style="background:#9e9e9e; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Cancelar</button>
+            <button type="submit" style="background:#f44336; color:white; padding:10px 24px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Guardar</button>
           </div>
         </form>
       </div>
@@ -1038,6 +1167,30 @@
   </main>
 
   <script>
+    function mostrarSwal(icono, titulo, texto, opciones = {}) {
+      return Swal.fire({
+        icon: icono,
+        title: titulo,
+        text: texto,
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#3085d6',
+        ...opciones
+      });
+    }
+
+    function confirmarSwal(opciones = {}) {
+      return Swal.fire({
+        icon: 'question',
+        title: '¿Estás seguro?',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, continuar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        ...opciones
+      });
+    }
+
     // Sistema de tabs
     document.querySelectorAll('.admin-tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -1059,7 +1212,7 @@
             case 'trazabilidad': cargarTrazabilidad(); break;
             case 'espera': cargarEspera(); break;
             case 'usuarios': cargarUsuarios(); break;
-            case 'sanciones': cargarSancionTipos(); break;
+            case 'sanciones': cargarSeccionSanciones(); break;
           }
         }
       });
@@ -1067,6 +1220,11 @@
 
     // Cargar datos de solicitudes pendientes con información completa del usuario
     let cacheUsuarios = {};
+    let sancionTiposCache = [];
+    let sancionCausasCache = [];
+    let sancionesCache = [];
+    let usuariosSancionCache = [];
+    const ESTADOS_SANCION_LABELS = { activa: 'Activa', resuelta: 'Resuelta' };
     async function obtenerUsuarioInfo(idUsuario) {
       if (cacheUsuarios[idUsuario]) return cacheUsuarios[idUsuario];
       if (!idUsuario) return null;
@@ -1564,58 +1722,87 @@
         b.parentNode.replaceChild(nuevoBtn, b);
         
         nuevoBtn.addEventListener('click', async (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-          if (!confirm('¿Aprobar este préstamo?')) return;
-          
+          const id = e.currentTarget.getAttribute('data-id');
+          const confirmacion = await confirmarSwal({
+            title: 'Aprobar préstamo',
+            text: '¿Deseas aprobar este préstamo?',
+            confirmButtonText: 'Sí, aprobar',
+            icon: 'question'
+          });
+          if (!confirmacion.isConfirmed) return;
+
           try {
-        const res = await fetch(`/prestamos/${id}/aprobar`, { method: 'PUT' });
-            const data = await res.json().catch(()=>({}));
-            
+            const res = await fetch(`/prestamos/${id}/aprobar`, { method: 'PUT' });
+            const data = await res.json().catch(() => ({}));
+
             if (res.ok && data.ok) {
-              alert('✅ Préstamo aprobado correctamente');
+              await mostrarSwal('success', 'Préstamo aprobado', 'El préstamo fue aprobado correctamente.');
               // Recargar ambas secciones
               await Promise.all([cargarPendientes(), cargarAprobados()]);
             } else {
-              alert('❌ ' + (data.error || 'No se pudo aprobar'));
+              await mostrarSwal('error', 'No se pudo aprobar', data.error || 'Inténtalo nuevamente.');
             }
           } catch (err) {
-            alert('Error de conexión: ' + err.message);
+            await mostrarSwal('error', 'Error de conexión', err.message || 'No fue posible completar la solicitud.');
           }
         });
       });
       document.querySelectorAll('.btn-rechazar').forEach(b => b.addEventListener('click', async (e) => {
         const id = e.currentTarget.getAttribute('data-id');
-        if (!confirm('¿Rechazar esta solicitud?')) return;
+        const confirmacion = await confirmarSwal({
+          title: 'Rechazar solicitud',
+          text: '¿Deseas rechazar esta solicitud de préstamo?',
+          confirmButtonText: 'Sí, rechazar',
+          icon: 'warning'
+        });
+        if (!confirmacion.isConfirmed) return;
+
         const res = await fetch(`/prestamos/${id}/rechazar`, { method: 'PUT' });
         if (res.ok) {
-          alert('❌ Rechazado');
+          await mostrarSwal('info', 'Solicitud rechazada', 'La solicitud fue rechazada correctamente.');
           cargarPendientes();
         } else {
-          const d = await res.json().catch(()=>({}));
-          alert('❌ ' + (d.error || 'No se pudo rechazar'));
+          const d = await res.json().catch(() => ({}));
+          await mostrarSwal('error', 'No se pudo rechazar', d.error || 'Intenta nuevamente.');
         }
       }));
       document.querySelectorAll('.btn-devolver').forEach(b => b.addEventListener('click', async (e) => {
         const id = e.currentTarget.getAttribute('data-id');
-        const res = await fetch(`/prestamos/${id}/devolver`, { method: 'PUT' });
-        if (res.ok) {
-          alert('📥 Devuelto');
-          cargarAprobados();
-          cargarEspera();
-        } else {
-          const d = await res.json().catch(()=>({}));
-          alert('❌ ' + (d.error || 'No se pudo marcar devuelto'));
+        const confirmacion = await confirmarSwal({
+          title: 'Marcar como devuelto',
+          text: '¿Confirmas que este préstamo fue devuelto?',
+          confirmButtonText: 'Sí, marcar',
+          icon: 'question'
+        });
+        if (!confirmacion.isConfirmed) return;
+
+        try {
+          const res = await fetch(`/prestamos/${id}/devolver`, { method: 'PUT' });
+          if (res.ok) {
+            await mostrarSwal('success', 'Préstamo devuelto', 'El préstamo se marcó como devuelto.');
+            cargarAprobados();
+            cargarEspera();
+          } else {
+            const d = await res.json().catch(() => ({}));
+            await mostrarSwal('error', 'No se pudo marcar', d.error || 'Intenta nuevamente.');
+          }
+        } catch (err) {
+          await mostrarSwal('error', 'Error de conexión', err.message || 'No fue posible completar la acción.');
         }
       }));
       document.querySelectorAll('.btn-notificar').forEach(b => b.addEventListener('click', async (e) => {
         const id = e.currentTarget.getAttribute('data-id');
-        const res = await fetch(`/espera/${id}/notificar`, { method: 'PUT' });
-        if (res.ok) {
-          alert('✅ Marcado como notificado');
-          cargarEspera();
-        } else {
-          const d = await res.json().catch(()=>({}));
-          alert('❌ ' + (d.error || 'No se pudo marcar'));
+        try {
+          const res = await fetch(`/espera/${id}/notificar`, { method: 'PUT' });
+          if (res.ok) {
+            await mostrarSwal('success', 'Notificación enviada', 'Se marcó como notificado correctamente.');
+            cargarEspera();
+          } else {
+            const d = await res.json().catch(() => ({}));
+            await mostrarSwal('error', 'No se pudo marcar', d.error || 'Intenta nuevamente.');
+          }
+        } catch (err) {
+          await mostrarSwal('error', 'Error de conexión', err.message || 'No fue posible completar la acción.');
         }
       }));
     }
@@ -1624,21 +1811,25 @@
     (function(){
       const t = localStorage.getItem('token');
       if (t !== 'admin-token') {
-        alert('Acceso restringido a administradores');
-        window.location.href = 'principal.html';
+        mostrarSwal('error', 'Acceso restringido', 'Esta sección es exclusiva para administradores.')
+          .then(() => { window.location.href = 'principal.html'; });
       }
     })();
 
     document.getElementById('formImport')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.currentTarget);
-      const res = await fetch('/import/csv', { method: 'POST', body: fd });
-      const data = await res.json().catch(()=>({}));
-      if (res.ok && data.ok) {
-        alert(`✅ Importados: ${data.creados} | Actualizados: ${data.actualizados || 0}`);
-        cargarRecursos();
-      } else {
-        alert('❌ ' + (data.error || 'No se pudo importar'));
+      try {
+        const res = await fetch('/import/csv', { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          await mostrarSwal('success', 'Importación completada', `Importados: ${data.creados} | Actualizados: ${data.actualizados || 0}`);
+          cargarRecursos();
+        } else {
+          await mostrarSwal('error', 'No se pudo importar', data.error || 'Intenta nuevamente.');
+        }
+      } catch (err) {
+        await mostrarSwal('error', 'Error de conexión', err.message || 'No fue posible completar la importación.');
       }
     });
 
@@ -1843,7 +2034,7 @@
       try {
         const res = await fetch(`/api/usuarios/${id}`);
         if (!res.ok) {
-          alert('No se pudo obtener la información del usuario');
+          await mostrarSwal('error', 'No se pudo obtener la información', 'Intenta nuevamente en unos segundos.');
           return;
         }
         const usuario = await res.json();
@@ -1865,7 +2056,7 @@
         document.getElementById('modalUsuario').style.display = 'flex';
       } catch (error) {
         console.error(error);
-        alert('Error cargando la información del usuario');
+        await mostrarSwal('error', 'Error de conexión', 'No se pudo cargar la información del usuario.');
       }
     }
 
@@ -1902,10 +2093,10 @@
             body: JSON.stringify(data)
           });
         } else {
-          if (!password) {
-            alert('La contraseña es requerida para nuevos usuarios');
-            return;
-          }
+      if (!password) {
+        await mostrarSwal('warning', 'Contraseña requerida', 'La contraseña es obligatoria para crear un nuevo usuario.');
+        return;
+      }
           res = await fetch('/api/usuarios', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1915,30 +2106,36 @@
         
         const result = await res.json();
         if (res.ok && result.ok !== false) {
-          alert('Usuario guardado correctamente');
+          await mostrarSwal('success', 'Usuario guardado', 'Los datos del usuario se guardaron correctamente.');
           cerrarModalUsuario();
           cargarUsuarios();
         } else {
-          alert('Error: ' + (result.error || 'No se pudo guardar'));
+          await mostrarSwal('error', 'No se pudo guardar', result.error || 'Intenta nuevamente.');
         }
       } catch (e) {
-        alert('Error: ' + e.message);
+        await mostrarSwal('error', 'Error de conexión', e.message || 'No fue posible guardar la información.');
       }
     }
 
     async function eliminarUsuario(id, nombre) {
-      if (!confirm(`¿Estás seguro de eliminar al usuario "${nombre}"?\n\n⚠️ Esta acción no se puede deshacer.`)) return;
+      const decision = await confirmarSwal({
+        title: 'Eliminar usuario',
+        html: `¿Estás seguro de eliminar al usuario <strong>${nombre}</strong>?<br><br>⚠️ Esta acción no se puede deshacer.`,
+        confirmButtonText: 'Sí, eliminar',
+        icon: 'warning'
+      });
+      if (!decision.isConfirmed) return;
       try {
         const res = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
         const result = await res.json();
         if (res.ok && result.ok !== false) {
-          alert('Usuario eliminado correctamente');
+          await mostrarSwal('success', 'Usuario eliminado', 'El usuario se eliminó correctamente.');
           cargarUsuarios();
         } else {
-          alert('Error: ' + (result.error || 'No se pudo eliminar'));
+          await mostrarSwal('error', 'No se pudo eliminar', result.error || 'Intenta nuevamente.');
         }
       } catch (e) {
-        alert('Error: ' + e.message);
+        await mostrarSwal('error', 'Error de conexión', e.message || 'No fue posible eliminar el usuario.');
       }
     }
 
@@ -1987,18 +2184,23 @@
         const res = await fetch('/api/sancion-tipos');
         if (!res.ok) {
           lista.innerHTML = '<div style="padding:20px; color:#f44336;">Error al cargar tipos de sanción</div>';
+          sancionTiposCache = [];
+          actualizarSelectTiposSancion();
           return;
         }
         
         const tipos = await res.json();
+        sancionTiposCache = Array.isArray(tipos) ? tipos : [];
+        actualizarSelectTiposSancion();
+        actualizarFiltroCausas();
         
-        if (tipos.length === 0) {
+        if (sancionTiposCache.length === 0) {
           lista.innerHTML = '<div style="padding:40px; text-align:center; color:#666; background:white; border-radius:8px; border:2px dashed #ddd;">No hay tipos de sanción registrados.<br><br>Haz clic en "➕ Agregar Tipo de Sanción" para crear uno.</div>';
           return;
         }
         
         let html = '<div style="display:grid; gap:12px;">';
-        tipos.forEach(tipo => {
+        sancionTiposCache.forEach(tipo => {
           html += `
             <div class="sancion-tipo-card" style="background:white; padding:16px; border-radius:8px; border-left:4px solid #f44336; box-shadow:0 2px 8px rgba(0,0,0,0.1);" data-codigo="${tipo.codigo.toLowerCase()}" data-descripcion="${tipo.descripcion.toLowerCase()}">
               <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
@@ -2030,8 +2232,642 @@
         }
       } catch (e) {
         lista.innerHTML = '<div style="padding:20px; color:#f44336;">Error de conexión al cargar tipos de sanción</div>';
+        sancionTiposCache = [];
+        actualizarSelectTiposSancion();
+        actualizarFiltroCausas();
         console.error('Error:', e);
       }
+    }
+
+    function actualizarSelectTiposSancion() {
+      const select = document.getElementById('sancionTipoSelect');
+      if (!select) {
+        actualizarSelectCausasPorTipo('');
+        return;
+      }
+      const valorActual = select.value;
+      select.innerHTML = '<option value="">Selecciona el tipo...</option>';
+      sancionTiposCache.forEach(tipo => {
+        const option = document.createElement('option');
+        option.value = tipo.id;
+        option.textContent = `${tipo.codigo} — ${tipo.descripcion}`;
+        select.appendChild(option);
+      });
+      if (valorActual && sancionTiposCache.some(tipo => tipo.id === valorActual)) {
+        select.value = valorActual;
+      }
+      actualizarSelectCausasPorTipo(select.value || '');
+    }
+
+    async function cargarUsuariosSancion(force = false) {
+      if (!force && usuariosSancionCache.length) {
+        actualizarSelectUsuariosSancion();
+        return usuariosSancionCache;
+      }
+      try {
+        const res = await fetch('/api/usuarios');
+        if (!res.ok) throw new Error('No se pudo cargar la lista de usuarios');
+        usuariosSancionCache = await res.json();
+        actualizarSelectUsuariosSancion();
+      } catch (error) {
+        console.error('Error cargando usuarios:', error);
+        usuariosSancionCache = [];
+        actualizarSelectUsuariosSancion();
+      }
+      return usuariosSancionCache;
+    }
+
+    function actualizarSelectUsuariosSancion() {
+      const select = document.getElementById('sancionUsuarioSelect');
+      if (!select) return;
+      const valorActual = select.value;
+      select.innerHTML = '<option value="">Selecciona un usuario...</option>';
+      usuariosSancionCache.forEach(usuario => {
+        const option = document.createElement('option');
+        option.value = usuario.id;
+        option.textContent = `${usuario.nombre || usuario.username || usuario.documento || usuario.id}${usuario.documento ? ` (${usuario.documento})` : ''}`;
+        option.dataset.documento = usuario.documento || '';
+        option.dataset.username = usuario.username || '';
+        select.appendChild(option);
+      });
+      if (valorActual && usuariosSancionCache.some(usuario => usuario.id === valorActual)) {
+        select.value = valorActual;
+      }
+      actualizarInfoUsuarioSeleccionado();
+      select.onchange = actualizarInfoUsuarioSeleccionado;
+    }
+
+    function actualizarInfoUsuarioSeleccionado() {
+      const select = document.getElementById('sancionUsuarioSelect');
+      const info = document.getElementById('sancionUsuarioInfo');
+      if (!select || !info) return;
+      const selectedId = select.value;
+      if (!selectedId) {
+        info.textContent = '';
+        return;
+      }
+      const usuario = usuariosSancionCache.find(u => u.id === selectedId);
+      if (!usuario) {
+        info.textContent = '';
+        return;
+      }
+      const detalle = [
+        usuario.documento ? `🆔 ${usuario.documento}` : '',
+        usuario.username ? `👤 ${usuario.username}` : '',
+        usuario.tipo_usuario ? `🎓 ${usuario.tipo_usuario}` : '',
+        usuario.numero_ficha ? `📘 Ficha: ${usuario.numero_ficha}` : ''
+      ].filter(Boolean).join(' · ');
+      info.textContent = detalle || 'Usuario sin detalles adicionales.';
+    }
+
+    function escapeHtml(texto) {
+      if (texto === null || texto === undefined) return '';
+      return texto.toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function normalizarNombreCausa(texto) {
+      if (!texto) return '';
+      return texto.trim().replace(/\s+/g, '_').toUpperCase();
+    }
+
+    function legibleDesdeCodigo(texto) {
+      if (!texto) return '';
+      return texto
+        .toString()
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .replace(/\b\w/g, letra => letra.toUpperCase())
+        .trim();
+    }
+
+    function actualizarSelectCausasPorTipo(tipoId, selectedId = '') {
+      const select = document.getElementById('sancionCausaSelect');
+      const info = document.getElementById('sancionCausaInfo');
+      if (!select) return;
+
+      const valorPrevio = selectedId || select.value;
+      select.innerHTML = '<option value="">Selecciona la causa...</option>';
+      select.disabled = true;
+
+      if (!tipoId) {
+        if (info) {
+          info.textContent = 'Selecciona un tipo para ver las causas disponibles.';
+        }
+        return;
+      }
+
+      const causas = sancionCausasCache.filter(causa => causa.tipo_id === tipoId);
+      if (!causas.length) {
+        if (info) {
+          info.textContent = 'Este tipo aún no tiene causas registradas. Agrega una nueva para continuar.';
+        }
+        return;
+      }
+
+      select.disabled = false;
+
+      causas.forEach(causa => {
+        const option = document.createElement('option');
+        option.value = causa.id;
+        const nombreLegible = causa.nombre_legible || causa.nombre || '';
+        option.textContent = `${nombreLegible} — ${causa.nombre}`;
+        select.appendChild(option);
+      });
+
+      if (valorPrevio && causas.some(causa => causa.id === valorPrevio)) {
+        select.value = valorPrevio;
+      } else if (selectedId && causas.some(causa => causa.id === selectedId)) {
+        select.value = selectedId;
+      }
+
+      actualizarInfoCausaSeleccionada();
+    }
+
+    function actualizarInfoCausaSeleccionada() {
+      const select = document.getElementById('sancionCausaSelect');
+      const info = document.getElementById('sancionCausaInfo');
+      if (!select || !info) return;
+
+      const causaId = select.value;
+      if (!causaId) {
+        info.textContent = 'Selecciona un tipo para ver las causas disponibles.';
+        return;
+      }
+
+      const causa = sancionCausasCache.find(item => item.id === causaId);
+      if (!causa) {
+        info.textContent = 'No se encontró información de la causa seleccionada.';
+        return;
+      }
+
+      const tipo = sancionTiposCache.find(t => t.id === causa.tipo_id);
+      const nombreLegible = causa.nombre_legible || causa.nombre || '';
+      const descripcion = causa.descripcion || 'Sin descripción registrada.';
+      const tipoTexto = tipo ? `${tipo.codigo} — ${tipo.descripcion}` : 'Tipo no disponible';
+
+      info.textContent = `${nombreLegible} · ${tipoTexto} · ${descripcion}`;
+    }
+
+    function actualizarFiltroCausas() {
+      const filtro = document.getElementById('filtroTipoCausas');
+      if (!filtro) return;
+      const valorActual = filtro.value;
+      filtro.innerHTML = '<option value="">Todos los tipos</option>';
+      sancionTiposCache.forEach(tipo => {
+        const option = document.createElement('option');
+        option.value = tipo.id;
+        option.textContent = `${tipo.codigo} — ${tipo.descripcion}`;
+        filtro.appendChild(option);
+      });
+      if (valorActual && sancionTiposCache.some(tipo => tipo.id === valorActual)) {
+        filtro.value = valorActual;
+      }
+    }
+
+    async function cargarSancionCausas(force = false) {
+      const lista = document.getElementById('listaSancionCausas');
+
+      if (!force && sancionCausasCache.length) {
+        if (lista) renderSancionCausas();
+        actualizarFiltroCausas();
+        actualizarSelectCausasPorTipo(document.getElementById('sancionTipoSelect')?.value || '');
+        return sancionCausasCache;
+      }
+
+      if (lista) {
+        lista.innerHTML = 'Cargando causas registradas...';
+      }
+
+      try {
+        const res = await fetch('/api/sancion-causas');
+        if (!res.ok) throw new Error('No se pudo cargar el catálogo de causas');
+        const causas = await res.json();
+        sancionCausasCache = Array.isArray(causas) ? causas : [];
+        if (lista) renderSancionCausas();
+        actualizarFiltroCausas();
+        actualizarSelectCausasPorTipo(document.getElementById('sancionTipoSelect')?.value || '');
+      } catch (error) {
+        console.error('Error cargando causas de sanción:', error);
+        sancionCausasCache = [];
+        if (lista) {
+          lista.innerHTML = '<div style="padding:18px; color:#f44336;">Error al cargar el catálogo de causas.</div>';
+        }
+        actualizarFiltroCausas();
+        actualizarSelectCausasPorTipo('');
+      }
+
+      return sancionCausasCache;
+    }
+
+    function renderSancionCausas() {
+      const lista = document.getElementById('listaSancionCausas');
+      if (!lista) return;
+
+      if (!sancionCausasCache.length) {
+        lista.innerHTML = '<div style="padding:32px; text-align:center; color:#555; background:#fafafa; border:2px dashed #d0d0d0; border-radius:10px;">No hay causas registradas aún. Crea una causa para habilitar el registro de sanciones.</div>';
+        return;
+      }
+
+      const filtro = document.getElementById('filtroTipoCausas');
+      const tipoFiltrado = filtro ? filtro.value : '';
+      const items = tipoFiltrado
+        ? sancionCausasCache.filter(item => item.tipo_id === tipoFiltrado)
+        : sancionCausasCache.slice();
+
+      if (!items.length) {
+        lista.innerHTML = '<div style="padding:28px; text-align:center; color:#666; background:#f4f6ff; border-radius:10px;">No hay causas registradas para el tipo seleccionado.</div>';
+        return;
+      }
+
+      let html = '<div style="display:grid; gap:12px;">';
+      items.forEach(causa => {
+        const tipo = sancionTiposCache.find(t => t.id === causa.tipo_id);
+        const etiquetaTipo = tipo ? `${tipo.codigo} — ${tipo.descripcion}` : 'Tipo no disponible';
+        const nombreLegible = causa.nombre_legible || causa.nombre || '';
+        const nombreHtml = escapeHtml(nombreLegible);
+        const codigoHtml = escapeHtml(causa.nombre || '');
+        const descripcionHtml = escapeHtml(causa.descripcion || 'Sin descripción registrada.');
+        const tipoHtml = escapeHtml(etiquetaTipo);
+
+        html += `
+          <div class="sancion-causa-card" style="background:white; border-radius:10px; border-left:4px solid #3f51b5; padding:18px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+            <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div style="flex:1 1 220px;">
+                <h4 style="margin:0; color:#3f51b5;">${nombreHtml}</h4>
+                <small style="display:block; color:#666; margin:4px 0 10px 0;"><code>${codigoHtml}</code> · ${tipoHtml}</small>
+                <p style="margin:0; color:#555;">${descripcionHtml}</p>
+              </div>
+              <div style="display:flex; gap:8px; align-items:flex-start;">
+                <button type="button" onclick="editarSancionCausa('${causa.id}')" style="background:#2196f3; color:white; padding:8px 14px; border:none; border-radius:6px; cursor:pointer; font-size:12px;">✏️ Editar</button>
+                <button type="button" onclick="eliminarSancionCausa('${causa.id}')" style="background:#f44336; color:white; padding:8px 14px; border:none; border-radius:6px; cursor:pointer; font-size:12px;">🗑️ Eliminar</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      lista.innerHTML = html;
+    }
+
+    function actualizarContadorDescripcionCausa() {
+      const textarea = document.getElementById('sancionCausaDescripcion');
+      const contador = document.getElementById('contadorDescripcionCausa');
+      if (!textarea || !contador) return;
+      const longitud = textarea.value.length;
+      contador.textContent = `${longitud}/150`;
+      contador.style.color = longitud < 5 ? '#f44336' : '#777';
+    }
+
+    async function abrirModalSancionCausa(causaId = null, tipoPorDefecto = null) {
+      if (!sancionTiposCache.length) {
+        await cargarSancionTipos();
+      }
+      if (!sancionCausasCache.length) {
+        await cargarSancionCausas();
+      }
+
+      const modal = document.getElementById('modalSancionCausa');
+      const titulo = document.getElementById('modalSancionCausaTitulo');
+      const form = document.getElementById('formSancionCausa');
+      const idInput = document.getElementById('sancionCausaId');
+      const tipoSelect = document.getElementById('sancionCausaTipoSelect');
+      const nombreInput = document.getElementById('sancionCausaNombre');
+      const descripcionInput = document.getElementById('sancionCausaDescripcion');
+
+      if (!modal || !form || !tipoSelect || !nombreInput || !descripcionInput) return;
+
+      const valorTipoActual = tipoSelect.value;
+      tipoSelect.innerHTML = '<option value="">Selecciona el tipo...</option>';
+      sancionTiposCache.forEach(tipo => {
+        const option = document.createElement('option');
+        option.value = tipo.id;
+        option.textContent = `${tipo.codigo} — ${tipo.descripcion}`;
+        tipoSelect.appendChild(option);
+      });
+
+      form.reset();
+      idInput.value = '';
+      nombreInput.value = '';
+      descripcionInput.value = '';
+
+      if (causaId) {
+        titulo.textContent = '✏️ Editar causa de sanción';
+        idInput.value = causaId;
+        let causa = sancionCausasCache.find(item => item.id === causaId);
+        if (!causa) {
+          try {
+            const res = await fetch(`/api/sancion-causas/${causaId}`);
+            if (res.ok) {
+              causa = await res.json();
+            }
+          } catch (error) {
+            console.error('Error obteniendo la causa:', error);
+          }
+        }
+        if (!causa) {
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo cargar la causa',
+            text: 'Intenta nuevamente más tarde.'
+          });
+          return;
+        }
+        if (tipoSelect && causa.tipo_id) {
+          tipoSelect.value = causa.tipo_id;
+        }
+        nombreInput.value = causa.nombre || '';
+        descripcionInput.value = causa.descripcion || '';
+      } else {
+        titulo.textContent = '📁 Nueva causa de sanción';
+        if (tipoPorDefecto && sancionTiposCache.some(tipo => tipo.id === tipoPorDefecto)) {
+          tipoSelect.value = tipoPorDefecto;
+        } else if (valorTipoActual && sancionTiposCache.some(tipo => tipo.id === valorTipoActual)) {
+          tipoSelect.value = valorTipoActual;
+        }
+      }
+
+      actualizarContadorDescripcionCausa();
+      modal.style.display = 'flex';
+      nombreInput.focus();
+    }
+
+    function cerrarModalSancionCausa() {
+      const modal = document.getElementById('modalSancionCausa');
+      const form = document.getElementById('formSancionCausa');
+      if (!modal || !form) return;
+      modal.style.display = 'none';
+      form.reset();
+      const contador = document.getElementById('contadorDescripcionCausa');
+      if (contador) contador.textContent = '0/150';
+      document.getElementById('sancionCausaId').value = '';
+    }
+
+    async function guardarSancionCausa(e) {
+      e.preventDefault();
+      const id = document.getElementById('sancionCausaId').value;
+      const tipoId = document.getElementById('sancionCausaTipoSelect').value;
+      const nombreInput = document.getElementById('sancionCausaNombre');
+      const descripcion = (document.getElementById('sancionCausaDescripcion').value || '').trim();
+
+      if (!tipoId) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Selecciona un tipo',
+          text: 'Debes elegir un tipo de sanción para asociar la causa.'
+        });
+        return;
+      }
+
+      const nombreNormalizado = normalizarNombreCausa(nombreInput.value);
+      if (!nombreNormalizado || nombreNormalizado.length < 3) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Nombre inválido',
+          text: 'El nombre de la causa debe tener al menos 3 caracteres en mayúsculas.'
+        });
+        nombreInput.focus();
+        return;
+      }
+
+      if (descripcion.length < 5) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Descripción insuficiente',
+          text: 'La descripción debe tener mínimo 5 caracteres.'
+        });
+        return;
+      }
+
+      const payload = {
+        tipo_id: tipoId,
+        nombre: nombreNormalizado,
+        descripcion: descripcion
+      };
+
+      try {
+        let res;
+        if (id) {
+          res = await fetch(`/api/sancion-causas/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch('/api/sancion-causas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        const data = await res.json();
+        if (res.ok && data.ok !== false) {
+          Swal.fire({
+            icon: 'success',
+            title: id ? 'Causa actualizada' : 'Causa registrada',
+            text: id ? 'Se actualizó la causa correctamente.' : 'Se registró la causa correctamente.',
+            timer: 2200,
+            showConfirmButton: false
+          });
+          cerrarModalSancionCausa();
+          await cargarSancionCausas(true);
+          const tipoActual = document.getElementById('sancionTipoSelect')?.value || '';
+          const nuevaCausaId = data?.causa?.id || '';
+          if (tipoActual && nuevaCausaId && data?.causa?.tipo_id === tipoActual) {
+            actualizarSelectCausasPorTipo(tipoActual, nuevaCausaId);
+          } else {
+            actualizarSelectCausasPorTipo(tipoActual);
+          }
+        } else {
+          const errores = Array.isArray(data.errores) ? data.errores.join('\n') : (data.error || 'No se pudo guardar la causa.');
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo guardar',
+            text: errores
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de conexión',
+          text: error.message || 'Intenta nuevamente más tarde.'
+        });
+      }
+    }
+
+    async function editarSancionCausa(id) {
+      await abrirModalSancionCausa(id);
+    }
+
+    async function eliminarSancionCausa(id) {
+      const causa = sancionCausasCache.find(item => item.id === id);
+      const nombre = causa ? (causa.nombre_legible || causa.nombre || 'esta causa') : 'esta causa';
+
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: '¿Eliminar causa?',
+        html: `¿Seguro que deseas eliminar la causa <strong>${escapeHtml(nombre)}</strong>?<br><br>Solo podrás eliminarla si no está asociada a sanciones registradas.`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch(`/api/sancion-causas/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.ok !== false) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Causa eliminada',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          await cargarSancionCausas(true);
+          actualizarSelectCausasPorTipo(document.getElementById('sancionTipoSelect')?.value || '');
+          await cargarSanciones(true);
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo eliminar',
+            text: data.error || 'Verifica si la causa está asociada a sanciones.'
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de conexión',
+          text: error.message || 'Intenta nuevamente más tarde.'
+        });
+      }
+    }
+
+    function toInputDate(isoString) {
+      if (!isoString) return '';
+      try {
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) {
+          return (isoString.split('T')[0] || '').trim();
+        }
+        return date.toISOString().split('T')[0];
+      } catch (error) {
+        return (isoString.split('T')[0] || '').trim();
+      }
+    }
+
+    async function cargarSanciones(force = false) {
+      const lista = document.getElementById('listaSanciones');
+      if (!lista) return;
+      lista.innerHTML = 'Cargando sanciones...';
+      try {
+        const res = await fetch('/api/sanciones');
+        if (!res.ok) throw new Error('No se pudo cargar la lista de sanciones');
+        sancionesCache = await res.json();
+        filtrarSanciones();
+      } catch (error) {
+        console.error('Error cargando sanciones:', error);
+        lista.innerHTML = '<div style="padding:20px; color:#f44336;">Error al cargar las sanciones registradas.</div>';
+        sancionesCache = [];
+      }
+    }
+
+    function renderSanciones(items) {
+      const lista = document.getElementById('listaSanciones');
+      if (!lista) return;
+      if (!items || items.length === 0) {
+        lista.innerHTML = '<div style="padding:40px; text-align:center; color:#555; background:#fafafa; border-radius:10px; border:2px dashed #e0e0e0;">No hay sanciones registradas con los filtros actuales.</div>';
+        return;
+      }
+      let html = '<div style="display:grid; gap:12px;">';
+      items.forEach(sancion => {
+        const estadoLabel = ESTADOS_SANCION_LABELS[sancion.estado] || sancion.estado || 'Desconocido';
+        const badgeColor = sancion.estado === 'activa' ? '#f44336' : '#4caf50';
+        const fechaInicio = sancion.fecha_inicio ? new Date(sancion.fecha_inicio).toLocaleDateString('es-ES') : '-';
+        const fechaFin = sancion.fecha_fin ? new Date(sancion.fecha_fin).toLocaleDateString('es-ES') : '—';
+        const causaLegible = sancion.causa_legible || legibleDesdeCodigo(sancion.causa_nombre || sancion.causa);
+        const causaHtml = escapeHtml(causaLegible || sancion.causa || 'Sin causa registrada');
+        const causaDescripcionHtml = sancion.causa_descripcion ? `<small style="display:block; margin-top:4px; color:#666;">${escapeHtml(sancion.causa_descripcion)}</small>` : '';
+        const usuarioNombreHtml = escapeHtml(sancion.usuario_nombre || 'Usuario desconocido');
+        const usuarioDocumentoHtml = sancion.usuario_documento ? escapeHtml(sancion.usuario_documento) : '';
+        const tipoCodigoHtml = escapeHtml(sancion.tipo_codigo || '—');
+        const tipoDescripcionHtml = escapeHtml(sancion.tipo_descripcion || 'Sin descripción');
+        const observacionesHtml = sancion.observaciones ? escapeHtml(sancion.observaciones) : '';
+        const prestamoHtml = sancion.id_prestamo ? escapeHtml(sancion.id_prestamo) : '';
+        html += `
+          <div class="sancion-card" style="background:white; border-radius:10px; border-left:4px solid ${badgeColor}; padding:18px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+              <div style="flex:1 1 220px;">
+                <h4 style="margin:0; font-size:18px; color:#2f2f2f;">
+                  ${usuarioNombreHtml}
+                  ${usuarioDocumentoHtml ? `<span style="font-size:13px; color:#666; font-weight:400;"> · ${usuarioDocumentoHtml}</span>` : ''}
+                </h4>
+                <div style="margin-top:6px; font-size:13px; color:#555;">
+                  <strong>Tipo:</strong> ${tipoCodigoHtml} — ${tipoDescripcionHtml}
+                </div>
+                <div style="margin-top:6px; font-size:13px; color:#444; line-height:1.45;">
+                  <strong>Motivo:</strong> ${causaHtml}
+                  ${causaDescripcionHtml}
+                </div>
+                ${observacionesHtml ? `<div style="margin-top:6px; font-size:13px; color:#666;"><strong>Notas:</strong> ${observacionesHtml}</div>` : ''}
+                ${prestamoHtml ? `<div style="margin-top:6px; font-size:12px; color:#777;">Préstamo relacionado: <code>${prestamoHtml}</code></div>` : ''}
+              </div>
+              <div style="text-align:right; min-width:150px;">
+                <span style="display:inline-block; padding:6px 12px; border-radius:999px; background:${badgeColor}; color:white; font-size:12px; font-weight:600;">${estadoLabel}</span>
+                <div style="margin-top:12px; font-size:12px; color:#555; line-height:1.5;">
+                  <div><strong>Inicio:</strong> ${fechaInicio}</div>
+                  <div><strong>Fin:</strong> ${fechaFin}</div>
+                </div>
+                <div style="margin-top:12px; display:flex; flex-direction:column; gap:6px;">
+                  <button onclick="editarSancion('${sancion.id}')" style="background:#2196f3; color:white; padding:8px 12px; border:none; border-radius:6px; cursor:pointer; font-size:12px;">✏️ Editar</button>
+                  <button onclick="eliminarSancion('${sancion.id}')" style="background:#f44336; color:white; padding:8px 12px; border:none; border-radius:6px; cursor:pointer; font-size:12px;">🗑️ Eliminar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      lista.innerHTML = html;
+    }
+
+    function filtrarSanciones() {
+      const termino = (document.getElementById('buscarSanciones')?.value || '').toLowerCase();
+      const estado = (document.getElementById('filtroEstadoSancion')?.value || '').toLowerCase();
+      const filtradas = sancionesCache.filter(item => {
+        const coincideEstado = !estado || (item.estado || '').toLowerCase() === estado;
+        if (!coincideEstado) return false;
+        if (!termino) return true;
+        const texto = [
+          item.usuario_nombre,
+          item.usuario_documento,
+          item.tipo_codigo,
+          item.tipo_descripcion,
+          item.causa,
+          item.causa_legible,
+          item.causa_descripcion,
+          item.observaciones
+        ].map(valor => (valor || '').toString().toLowerCase()).join(' ');
+        return texto.includes(termino);
+      });
+      renderSanciones(filtradas);
+    }
+
+    async function cargarSeccionSanciones(force = false) {
+      await cargarSancionTipos();
+      await cargarSancionCausas(force);
+      await Promise.all([
+        cargarUsuariosSancion(force),
+        cargarSanciones(force)
+      ]);
     }
 
     function abrirModalSancionTipo(id = null) {
@@ -2142,7 +2978,8 @@
             showConfirmButton: false
           });
           cerrarModalSancionTipo();
-          cargarSancionTipos();
+          await cargarSancionTipos();
+          await cargarSancionCausas(true);
         } else {
           Swal.fire({
             icon: 'error',
@@ -2188,7 +3025,9 @@
               timer: 2000,
               showConfirmButton: false
             });
-            cargarSancionTipos();
+            await cargarSancionTipos();
+            await cargarSancionCausas(true);
+            await cargarSanciones(true);
           } else {
             Swal.fire({
               icon: 'error',
@@ -2205,6 +3044,307 @@
         }
       }
     }
+
+    async function abrirModalSancion(id = null) {
+      await cargarUsuariosSancion();
+      if (!sancionTiposCache.length) {
+        await cargarSancionTipos();
+      } else {
+        actualizarSelectTiposSancion();
+      }
+      await cargarSancionCausas();
+
+      if (!usuariosSancionCache.length) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Lista de usuarios vacía',
+          text: 'No hay usuarios registrados para aplicar sanciones en este momento.'
+        });
+        return;
+      }
+
+      if (!sancionTiposCache.length) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Registra un tipo de sanción',
+          text: 'Debes crear al menos un tipo de sanción antes de registrar sanciones.'
+        });
+        return;
+      }
+
+      if (!sancionCausasCache.length) {
+        const crear = await Swal.fire({
+          icon: 'info',
+          title: 'Sin causas registradas',
+          text: 'Necesitas registrar al menos una causa para poder asignarla a las sanciones.',
+          showCancelButton: true,
+          confirmButtonText: 'Registrar causa',
+          cancelButtonText: 'Cerrar',
+          confirmButtonColor: '#3f51b5'
+        });
+        if (crear.isConfirmed) {
+          await abrirModalSancionCausa(null, sancionTiposCache[0]?.id || null);
+        }
+        return;
+      }
+
+      const modal = document.getElementById('modalSancion');
+      const titulo = document.getElementById('modalSancionTitulo');
+      const form = document.getElementById('formSancion');
+      const idInput = document.getElementById('sancionId');
+      const usuarioSelect = document.getElementById('sancionUsuarioSelect');
+      const tipoSelect = document.getElementById('sancionTipoSelect');
+      const causaSelect = document.getElementById('sancionCausaSelect');
+      const observacionesInput = document.getElementById('sancionObservaciones');
+      const fechaInicioInput = document.getElementById('sancionFechaInicio');
+      const fechaFinInput = document.getElementById('sancionFechaFin');
+      const estadoSelect = document.getElementById('sancionEstado');
+      const prestamoInput = document.getElementById('sancionPrestamoId');
+      const usuarioInfo = document.getElementById('sancionUsuarioInfo');
+
+      if (!modal || !form || !usuarioSelect || !tipoSelect || !causaSelect) return;
+
+      form.reset();
+      idInput.value = '';
+      const hoy = new Date().toISOString().split('T')[0];
+      if (fechaInicioInput) fechaInicioInput.value = hoy;
+      if (fechaFinInput) fechaFinInput.value = '';
+      if (usuarioInfo) usuarioInfo.textContent = '';
+      if (estadoSelect) estadoSelect.value = 'activa';
+      actualizarSelectCausasPorTipo(tipoSelect.value || '');
+
+      if (id) {
+        titulo.textContent = '✏️ Editar sanción';
+        idInput.value = id;
+        let sancion = sancionesCache.find(item => item.id === id);
+        if (!sancion) {
+          try {
+            const res = await fetch(`/api/sanciones/${id}`);
+            if (res.ok) {
+              sancion = await res.json();
+            }
+          } catch (error) {
+            console.error('Error obteniendo sanción:', error);
+          }
+        }
+        if (!sancion) {
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo cargar la sanción',
+            text: 'Intenta nuevamente.'
+          });
+          return;
+        }
+          usuarioSelect.value = sancion.id_usuario || '';
+        if (sancion.tipo_id) {
+          tipoSelect.value = sancion.tipo_id;
+        }
+        actualizarSelectCausasPorTipo(tipoSelect.value || '', sancion.causa_id || '');
+        if (causaSelect && sancion.causa_id) {
+          causaSelect.value = sancion.causa_id;
+        }
+        if (observacionesInput) {
+          observacionesInput.value = sancion.observaciones || '';
+        }
+        if (fechaInicioInput) {
+          fechaInicioInput.value = toInputDate(sancion.fecha_inicio) || hoy;
+        }
+        if (fechaFinInput) {
+          fechaFinInput.value = toInputDate(sancion.fecha_fin);
+        }
+        if (estadoSelect) {
+          estadoSelect.value = sancion.estado || 'activa';
+        }
+        if (prestamoInput) {
+          prestamoInput.value = sancion.id_prestamo || '';
+        }
+        if (sancion.causa_id && !causaSelect.value) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Causa no disponible',
+            text: 'La causa asociada ya no existe. Selecciona otra causa disponible.'
+          });
+        }
+      } else {
+        titulo.textContent = '➕ Registrar Sanción';
+        actualizarSelectCausasPorTipo(tipoSelect.value || '');
+      }
+
+      actualizarInfoUsuarioSeleccionado();
+      actualizarInfoCausaSeleccionada();
+      modal.style.display = 'flex';
+      tipoSelect.focus();
+    }
+
+    function cerrarModalSancion() {
+      const modal = document.getElementById('modalSancion');
+      const form = document.getElementById('formSancion');
+      if (!modal || !form) return;
+      modal.style.display = 'none';
+      form.reset();
+      const hoy = new Date().toISOString().split('T')[0];
+      const fechaInicioInput = document.getElementById('sancionFechaInicio');
+      if (fechaInicioInput) fechaInicioInput.value = hoy;
+      const usuarioInfo = document.getElementById('sancionUsuarioInfo');
+      if (usuarioInfo) usuarioInfo.textContent = '';
+      const causaSelect = document.getElementById('sancionCausaSelect');
+      if (causaSelect) causaSelect.value = '';
+      actualizarSelectCausasPorTipo('');
+      document.getElementById('sancionId').value = '';
+    }
+
+    async function guardarSancion(e) {
+      e.preventDefault();
+      const id = document.getElementById('sancionId').value;
+      const idUsuario = document.getElementById('sancionUsuarioSelect').value;
+      const tipoId = document.getElementById('sancionTipoSelect').value;
+      const causaSelect = document.getElementById('sancionCausaSelect');
+      const causaId = causaSelect ? causaSelect.value : '';
+      const observaciones = document.getElementById('sancionObservaciones').value.trim();
+      const fechaInicio = document.getElementById('sancionFechaInicio').value;
+      const fechaFin = document.getElementById('sancionFechaFin').value;
+      const estado = document.getElementById('sancionEstado').value;
+      const prestamoId = document.getElementById('sancionPrestamoId').value.trim();
+
+      if (!idUsuario || !tipoId || !causaId) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Datos incompletos',
+          text: 'Selecciona un usuario, un tipo y una causa válida antes de guardar.'
+        });
+        return;
+      }
+
+      const payload = {
+        id_usuario: idUsuario,
+        tipo_id: tipoId,
+        causa_id: causaId,
+        estado,
+        fecha_inicio: fechaInicio,
+      };
+
+      if (observaciones) payload.observaciones = observaciones;
+      if (fechaFin) payload.fecha_fin = fechaFin;
+      if (prestamoId) payload.id_prestamo = prestamoId;
+
+      try {
+        let res;
+        if (id) {
+          res = await fetch(`/api/sanciones/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch('/api/sanciones', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        const result = await res.json();
+        if (res.ok && result.ok !== false) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Registro correcto',
+            text: id ? 'Sanción actualizada correctamente.' : 'Sanción registrada correctamente.',
+            timer: 2200,
+            showConfirmButton: false
+          });
+          cerrarModalSancion();
+          await cargarSanciones(true);
+        } else {
+          const mensaje = Array.isArray(result.errores) ? result.errores.join('\n') : (result.error || 'No se pudo guardar la sanción.');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: mensaje
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de conexión',
+          text: error.message || 'No fue posible completar la operación.'
+        });
+      }
+    }
+
+    async function editarSancion(id) {
+      await abrirModalSancion(id);
+    }
+
+    async function eliminarSancion(id) {
+      const sancion = sancionesCache.find(item => item.id === id);
+      const descripcion = sancion
+        ? `${sancion.usuario_nombre || sancion.usuario_documento || 'el usuario seleccionado'} (${sancion.tipo_codigo || 'SIN CÓDIGO'})`
+        : 'esta sanción';
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: '¿Eliminar sanción?',
+        html: `¿Deseas eliminar la sanción aplicada a <strong>${descripcion}</strong>?<br><br>Esta acción no se puede deshacer.`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+      });
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch(`/api/sanciones/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.ok !== false) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Sanción eliminada',
+            timer: 1800,
+            showConfirmButton: false
+          });
+          await cargarSanciones(true);
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo eliminar',
+            text: data.error || 'Intenta nuevamente.'
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de conexión',
+          text: error.message || 'No fue posible completar la operación.'
+        });
+      }
+    }
+
+    const tipoSelectModal = document.getElementById('sancionTipoSelect');
+    if (tipoSelectModal) {
+      tipoSelectModal.addEventListener('change', () => {
+        actualizarSelectCausasPorTipo(tipoSelectModal.value || '');
+      });
+    }
+
+    const causaSelectModal = document.getElementById('sancionCausaSelect');
+    if (causaSelectModal) {
+      causaSelectModal.addEventListener('change', actualizarInfoCausaSeleccionada);
+    }
+
+    const causaDescripcionInput = document.getElementById('sancionCausaDescripcion');
+    if (causaDescripcionInput) {
+      causaDescripcionInput.addEventListener('input', actualizarContadorDescripcionCausa);
+    }
+
+    const causaNombreInput = document.getElementById('sancionCausaNombre');
+    if (causaNombreInput) {
+      causaNombreInput.addEventListener('blur', () => {
+        causaNombreInput.value = normalizarNombreCausa(causaNombreInput.value);
+      });
+    }
+
+    actualizarInfoCausaSeleccionada();
+    actualizarContadorDescripcionCausa();
 
     // Actualizar badge de mensajes cada 10 segundos
     setInterval(actualizarBadgeMensajes, 10000);

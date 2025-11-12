@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 
 from flask import Flask, jsonify, request, send_from_directory, render_template
 import csv
-from sqlalchemy import create_engine, Column, String, Integer, Text, DateTime, text
+from sqlalchemy import create_engine, Column, String, Integer, Text, DateTime, text, func
 from sqlalchemy.orm import sessionmaker, declarative_base, scoped_session
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -134,6 +134,34 @@ class SancionTipoDB(Base):
     actualizado_en = Column(DateTime, nullable=False)  # Auditoría
 
 
+class SancionDB(Base):
+    __tablename__ = "sanciones"
+    id = Column(String(64), primary_key=True)
+    tipo_id = Column(String(64), nullable=False)
+    id_usuario = Column(String(64), nullable=False)
+    id_prestamo = Column(String(64), nullable=True)
+    causa_id = Column(String(64), nullable=True)
+    causa = Column(Text, nullable=False)
+    observaciones = Column(Text, nullable=True)
+    estado = Column(String(32), nullable=False, default='activa')  # activa, resuelta
+    fecha_inicio = Column(DateTime, nullable=False)
+    fecha_fin = Column(DateTime, nullable=True)
+    resuelto_en = Column(DateTime, nullable=True)
+    usuario_registro = Column(String(64), nullable=True)
+    creado_en = Column(DateTime, nullable=False)
+    actualizado_en = Column(DateTime, nullable=False)
+
+
+class SancionCausaDB(Base):
+    __tablename__ = "sancion_causa"
+    id = Column(String(64), primary_key=True)
+    tipo_id = Column(String(64), nullable=False)
+    nombre = Column(String(120), nullable=False)
+    descripcion = Column(Text, nullable=True)
+    creado_en = Column(DateTime, nullable=False)
+    actualizado_en = Column(DateTime, nullable=False)
+
+
 class LibroHistorialDB(Base):
     """Tabla de historial para mantener trazabilidad de libros eliminados"""
     __tablename__ = "libro_historial"
@@ -172,6 +200,29 @@ SessionLocal = scoped_session(sessionmaker(bind=engine, autoflush=False, autocom
 
 def now_iso() -> str:
     return datetime.utcnow().isoformat() + 'Z'
+
+
+def parse_iso_datetime(value: Any) -> Optional[datetime]:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, (int, float)):
+        try:
+            return datetime.fromtimestamp(value)
+        except Exception:
+            return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        if text.endswith('Z'):
+            text = text[:-1]
+        try:
+            return datetime.fromisoformat(text)
+        except ValueError:
+            pass
+    return None
 
 
 def _load_font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -2082,6 +2133,534 @@ def sancion_tipo_eliminar(tipo_id: str):
         db.close()
 
 
+# -------------------------------
+# API CRUD de Causas de Sanción
+# -------------------------------
+
+
+def validar_sancion_causa(data: Dict[str, Any], db, *, excluir_id: Optional[str] = None) -> tuple[list[str], Optional[SancionTipoDB], str, Optional[str]]:
+    errores: list[str] = []
+    tipo_id = (data.get('tipo_id') or '').strip()
+    nombre_raw = (data.get('nombre') or '').strip()
+    nombre_tokens = [token for token in nombre_raw.split(' ') if token]
+    nombre = "_".join(nombre_tokens).upper()
+    descripcion = (data.get('descripcion') or '').strip()
+
+    tipo = None
+    if not tipo_id:
+        errores.append("Debes seleccionar un tipo de sanción")
+    else:
+        tipo = db.get(SancionTipoDB, tipo_id)
+        if not tipo:
+            errores.append("Tipo de sanción no encontrado")
+
+    if not nombre:
+        errores.append("El nombre de la causa es obligatorio")
+    elif len(nombre) < 3:
+        errores.append("El nombre de la causa debe tener al menos 3 caracteres")
+    elif len(nombre) > 120:
+        errores.append("El nombre de la causa debe tener máximo 120 caracteres")
+    else:
+        # Validar duplicados por tipo
+        query = db.query(SancionCausaDB).filter(
+            SancionCausaDB.tipo_id == tipo_id,
+            func.upper(SancionCausaDB.nombre) == nombre
+        )
+        if excluir_id:
+            query = query.filter(SancionCausaDB.id != excluir_id)
+        if query.first():
+            errores.append("Ya existe una causa con ese nombre para el tipo seleccionado")
+
+    descripcion_final: Optional[str] = None
+    if not descripcion:
+        errores.append("La descripción de la causa es obligatoria")
+    elif len(descripcion) < 5:
+        errores.append("La descripción debe tener mínimo 5 caracteres")
+    elif len(descripcion) > 150:
+        errores.append("La descripción debe tener máximo 150 caracteres")
+    else:
+        descripcion_final = descripcion
+
+    return errores, tipo, nombre, descripcion_final
+
+
+@app.get('/api/sancion-causas')
+def sancion_causas_listar():
+    db = SessionLocal()
+    try:
+        query = db.query(SancionCausaDB)
+        tipo_id = request.args.get('tipo_id')
+        if tipo_id:
+            query = query.filter(SancionCausaDB.tipo_id == tipo_id)
+        causas = query.order_by(SancionCausaDB.nombre.asc()).all()
+        return jsonify([
+            {
+                "id": causa.id,
+                "tipo_id": causa.tipo_id,
+                "nombre": ("_".join((causa.nombre or '').split()).upper()) if causa.nombre else None,
+                "nombre_legible": (causa.nombre or '').replace('_', ' ').title() if causa.nombre else None,
+                "descripcion": causa.descripcion,
+                "creado_en": causa.creado_en.isoformat() + 'Z',
+                "actualizado_en": causa.actualizado_en.isoformat() + 'Z'
+            }
+            for causa in causas
+        ])
+    finally:
+        db.close()
+
+
+@app.get('/api/sancion-causas/<causa_id>')
+def sancion_causa_obtener(causa_id: str):
+    db = SessionLocal()
+    try:
+        causa = db.get(SancionCausaDB, causa_id)
+        if not causa:
+            return jsonify({"error": "Causa no encontrada"}), 404
+        nombre_normalizado = ("_".join((causa.nombre or '').split()).upper()) if causa.nombre else None
+        return jsonify({
+            "id": causa.id,
+            "tipo_id": causa.tipo_id,
+            "nombre": nombre_normalizado,
+            "nombre_legible": (causa.nombre or '').replace('_', ' ').title() if causa.nombre else None,
+            "descripcion": causa.descripcion,
+            "creado_en": causa.creado_en.isoformat() + 'Z',
+            "actualizado_en": causa.actualizado_en.isoformat() + 'Z'
+        })
+    finally:
+        db.close()
+
+
+@app.post('/api/sancion-causas')
+def sancion_causa_crear():
+    data = request.get_json(force=True, silent=True) or {}
+    db = SessionLocal()
+    try:
+        errores, tipo, nombre, descripcion = validar_sancion_causa(data, db)
+        if errores:
+            return jsonify({"ok": False, "errores": errores}), 400
+
+        now = datetime.utcnow()
+        causa = SancionCausaDB(
+            id=str(uuid.uuid4()),
+            tipo_id=tipo.id,
+            nombre=nombre,
+            descripcion=descripcion,
+            creado_en=now,
+            actualizado_en=now
+        )
+        db.add(causa)
+        db.commit()
+        db.refresh(causa)
+        nombre_normalizado = ("_".join((causa.nombre or '').split()).upper()) if causa.nombre else None
+        return jsonify({
+            "ok": True,
+            "causa": {
+                "id": causa.id,
+                "tipo_id": causa.tipo_id,
+                "nombre": nombre_normalizado,
+                "nombre_legible": (causa.nombre or '').replace('_', ' ').title() if causa.nombre else None,
+                "descripcion": causa.descripcion,
+                "creado_en": causa.creado_en.isoformat() + 'Z',
+                "actualizado_en": causa.actualizado_en.isoformat() + 'Z'
+            }
+        }), 201
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al crear causa: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+@app.put('/api/sancion-causas/<causa_id>')
+def sancion_causa_actualizar(causa_id: str):
+    data = request.get_json(force=True, silent=True) or {}
+    db = SessionLocal()
+    try:
+        causa = db.get(SancionCausaDB, causa_id)
+        if not causa:
+            return jsonify({"ok": False, "error": "Causa no encontrada"}), 404
+
+        errores, tipo, nombre, descripcion = validar_sancion_causa(data, db, excluir_id=causa_id)
+        if errores:
+            return jsonify({"ok": False, "errores": errores}), 400
+
+        causa.tipo_id = tipo.id
+        causa.nombre = nombre
+        causa.descripcion = descripcion
+        causa.actualizado_en = datetime.utcnow()
+
+        db.commit()
+        db.refresh(causa)
+
+        nombre_normalizado = ("_".join((causa.nombre or '').split()).upper()) if causa.nombre else None
+        return jsonify({
+            "ok": True,
+            "causa": {
+                "id": causa.id,
+                "tipo_id": causa.tipo_id,
+                "nombre": nombre_normalizado,
+                "nombre_legible": (causa.nombre or '').replace('_', ' ').title() if causa.nombre else None,
+                "descripcion": causa.descripcion,
+                "creado_en": causa.creado_en.isoformat() + 'Z',
+                "actualizado_en": causa.actualizado_en.isoformat() + 'Z'
+            }
+        })
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al actualizar causa: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+@app.delete('/api/sancion-causas/<causa_id>')
+def sancion_causa_eliminar(causa_id: str):
+    db = SessionLocal()
+    try:
+        causa = db.get(SancionCausaDB, causa_id)
+        if not causa:
+            return jsonify({"ok": False, "error": "Causa no encontrada"}), 404
+
+        # Verificar si está en uso
+        en_uso = db.query(SancionDB).filter(SancionDB.causa_id == causa_id).first()
+        if en_uso:
+            return jsonify({"ok": False, "error": "No puedes eliminar la causa porque está asociada a sanciones registradas"}), 400
+
+        db.delete(causa)
+        db.commit()
+        return jsonify({"ok": True, "mensaje": "Causa eliminada correctamente"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al eliminar causa: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+# -------------------------------
+# API CRUD de Sanciones
+# -------------------------------
+
+ESTADOS_SANCION_VALIDOS = {'activa', 'resuelta'}
+
+
+def sancion_to_dict(
+    sancion: SancionDB,
+    tipo: Optional[SancionTipoDB] = None,
+    usuario: Optional[UserDB] = None,
+    prestamo: Optional[PrestamoDB] = None,
+    causa: Optional[SancionCausaDB] = None,
+) -> Dict[str, Any]:
+    return {
+        "id": sancion.id,
+        "tipo_id": sancion.tipo_id,
+        "id_usuario": sancion.id_usuario,
+        "id_prestamo": sancion.id_prestamo,
+        "causa_id": sancion.causa_id,
+        "causa": causa.nombre if causa else sancion.causa,
+        "causa_nombre": causa.nombre if causa else sancion.causa,
+        "causa_legible": (
+            (causa.nombre.replace('_', ' ').title() if causa and causa.nombre else None)
+            if causa
+            else ((sancion.causa or "").replace('_', ' ').title() if sancion.causa else None)
+        ),
+        "causa_descripcion": causa.descripcion if causa else None,
+        "observaciones": sancion.observaciones,
+        "estado": sancion.estado,
+        "fecha_inicio": sancion.fecha_inicio.isoformat() + 'Z' if sancion.fecha_inicio else None,
+        "fecha_fin": sancion.fecha_fin.isoformat() + 'Z' if sancion.fecha_fin else None,
+        "resuelto_en": sancion.resuelto_en.isoformat() + 'Z' if sancion.resuelto_en else None,
+        "usuario_registro": sancion.usuario_registro,
+        "creado_en": sancion.creado_en.isoformat() + 'Z' if sancion.creado_en else None,
+        "actualizado_en": sancion.actualizado_en.isoformat() + 'Z' if sancion.actualizado_en else None,
+        "tipo_codigo": tipo.codigo if tipo else None,
+        "tipo_descripcion": tipo.descripcion if tipo else None,
+        "usuario_nombre": usuario.nombre if usuario else None,
+        "usuario_documento": usuario.documento if usuario else None,
+        "prestamo_estado": prestamo.estado if prestamo else None,
+        "prestamo_id": prestamo.id if prestamo else sancion.id_prestamo,
+    }
+
+
+def validar_sancion_payload(data: Dict[str, Any], db, *, existente: Optional[SancionDB] = None) -> tuple[list[str], Dict[str, Any]]:
+    errores: list[str] = []
+    sanitized: Dict[str, Any] = {}
+
+    tipo = None
+    tipo_id = (data.get('tipo_id') or '').strip()
+    if tipo_id:
+        tipo = db.get(SancionTipoDB, tipo_id)
+        if not tipo:
+            errores.append("Tipo de sanción no encontrado")
+        else:
+            sanitized['tipo'] = tipo
+            sanitized['tipo_id'] = tipo_id
+
+    id_usuario = (data.get('id_usuario') or '').strip()
+    if not id_usuario:
+        errores.append("El usuario es obligatorio")
+    else:
+        usuario = db.query(UserDB).filter(
+            (UserDB.id == id_usuario) |
+            (UserDB.documento == id_usuario) |
+            (UserDB.username == id_usuario)
+        ).first()
+        if not usuario:
+            errores.append("Usuario no encontrado")
+        else:
+            sanitized['usuario'] = usuario
+            sanitized['id_usuario'] = usuario.id
+
+    id_prestamo = (data.get('id_prestamo') or '').strip()
+    if id_prestamo:
+        prestamo = db.get(PrestamoDB, id_prestamo)
+        if not prestamo:
+            errores.append("Préstamo vinculado no encontrado")
+        else:
+            sanitized['prestamo'] = prestamo
+            sanitized['id_prestamo'] = prestamo.id
+    else:
+        sanitized['id_prestamo'] = None
+
+    causa_id = (data.get('causa_id') or '').strip()
+    if not causa_id:
+        errores.append("Debes seleccionar una causa registrada")
+    else:
+        causa_obj = db.get(SancionCausaDB, causa_id)
+        if not causa_obj:
+            errores.append("La causa seleccionada no existe")
+        else:
+            if tipo and causa_obj.tipo_id != tipo.id:
+                errores.append("La causa seleccionada no pertenece al tipo indicado")
+            else:
+                if not tipo:
+                    tipo = db.get(SancionTipoDB, causa_obj.tipo_id)
+                    if tipo:
+                        sanitized['tipo'] = tipo
+                        sanitized['tipo_id'] = tipo.id
+                sanitized['causa_obj'] = causa_obj
+                sanitized['causa_id'] = causa_obj.id
+                sanitized['causa_texto'] = causa_obj.nombre
+
+    observaciones = (data.get('observaciones') or '').strip()
+    sanitized['observaciones'] = observaciones or None
+
+    estado_val = data.get('estado')
+    if not estado_val and existente:
+        estado_val = existente.estado
+    estado_val = (estado_val or 'activa').strip().lower()
+    if estado_val and estado_val not in ESTADOS_SANCION_VALIDOS:
+        errores.append("Estado de sanción inválido")
+    else:
+        sanitized['estado'] = estado_val or 'activa'
+
+    fecha_inicio = parse_iso_datetime(data.get('fecha_inicio')) or (existente.fecha_inicio if existente else datetime.utcnow())
+    fecha_fin = parse_iso_datetime(data.get('fecha_fin'))
+    if fecha_fin and fecha_inicio and fecha_fin < fecha_inicio:
+        errores.append("La fecha de finalización no puede ser anterior a la fecha de inicio")
+    sanitized['fecha_inicio'] = fecha_inicio
+    sanitized['fecha_fin'] = fecha_fin
+
+    usuario_registro = (data.get('usuario_registro') or '').strip() or None
+    sanitized['usuario_registro'] = usuario_registro
+
+    if sanitized.get('estado') == 'resuelta' and not fecha_fin:
+        # Si se marca como resuelta y no hay fecha_fin, usar la actual
+        sanitized['fecha_fin'] = datetime.utcnow()
+
+    if 'tipo_id' not in sanitized or not sanitized['tipo_id']:
+        errores.append("El tipo de sanción es obligatorio")
+
+    return errores, sanitized
+
+
+@app.get('/api/sanciones')
+def sanciones_listar():
+    db = SessionLocal()
+    try:
+        query = db.query(SancionDB)
+        id_usuario = request.args.get('id_usuario')
+        estado = request.args.get('estado')
+        if id_usuario:
+            query = query.filter(SancionDB.id_usuario == id_usuario)
+        if estado:
+            query = query.filter(SancionDB.estado == estado.lower())
+        sanciones = query.order_by(SancionDB.creado_en.desc()).all()
+
+        tipo_ids = {s.tipo_id for s in sanciones if s.tipo_id}
+        usuario_ids = {s.id_usuario for s in sanciones if s.id_usuario}
+        prestamo_ids = {s.id_prestamo for s in sanciones if s.id_prestamo}
+        causa_ids = {s.causa_id for s in sanciones if s.causa_id}
+
+        tipos_map = {}
+        if tipo_ids:
+            tipos = db.query(SancionTipoDB).filter(SancionTipoDB.id.in_(tipo_ids)).all()
+            tipos_map = {t.id: t for t in tipos}
+
+        usuarios_map = {}
+        if usuario_ids:
+            usuarios = db.query(UserDB).filter(UserDB.id.in_(usuario_ids)).all()
+            usuarios_map = {u.id: u for u in usuarios}
+
+        prestamos_map = {}
+        if prestamo_ids:
+            prestamos = db.query(PrestamoDB).filter(PrestamoDB.id.in_(prestamo_ids)).all()
+            prestamos_map = {p.id: p for p in prestamos}
+
+        causas_map = {}
+        if causa_ids:
+            causas = db.query(SancionCausaDB).filter(SancionCausaDB.id.in_(causa_ids)).all()
+            causas_map = {c.id: c for c in causas}
+
+        resultado = [
+            sancion_to_dict(
+                s,
+                tipo=tipos_map.get(s.tipo_id),
+                usuario=usuarios_map.get(s.id_usuario),
+                prestamo=prestamos_map.get(s.id_prestamo),
+                causa=causas_map.get(s.causa_id)
+            )
+            for s in sanciones
+        ]
+
+        q = (request.args.get('q') or '').strip().lower()
+        if q:
+            filtrado = []
+            for item in resultado:
+                texto = " ".join(str(item.get(k) or '') for k in ['tipo_codigo', 'tipo_descripcion', 'usuario_nombre', 'usuario_documento', 'causa', 'estado'])
+                if q in texto.lower():
+                    filtrado.append(item)
+            resultado = filtrado
+
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({"error": f"Error al listar sanciones: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+@app.get('/api/sanciones/<sancion_id>')
+def sancion_obtener(sancion_id: str):
+    db = SessionLocal()
+    try:
+        sancion = db.get(SancionDB, sancion_id)
+        if not sancion:
+            return jsonify({"error": "Sanción no encontrada"}), 404
+        tipo = db.get(SancionTipoDB, sancion.tipo_id) if sancion.tipo_id else None
+        usuario = db.get(UserDB, sancion.id_usuario) if sancion.id_usuario else None
+        prestamo = db.get(PrestamoDB, sancion.id_prestamo) if sancion.id_prestamo else None
+        causa = db.get(SancionCausaDB, sancion.causa_id) if sancion.causa_id else None
+        return jsonify(sancion_to_dict(sancion, tipo=tipo, usuario=usuario, prestamo=prestamo, causa=causa))
+    finally:
+        db.close()
+
+
+@app.post('/api/sanciones')
+def sancion_crear():
+    data = request.get_json(force=True, silent=True) or {}
+    db = SessionLocal()
+    try:
+        errores, sanitized = validar_sancion_payload(data, db)
+        if errores:
+            return jsonify({"ok": False, "errores": errores}), 400
+
+        now = datetime.utcnow()
+        sancion = SancionDB(
+            id=str(uuid.uuid4()),
+            tipo_id=sanitized['tipo_id'],
+            id_usuario=sanitized['id_usuario'],
+            id_prestamo=sanitized.get('id_prestamo'),
+            causa_id=sanitized.get('causa_id'),
+            causa=sanitized.get('causa_texto', ''),
+            observaciones=sanitized.get('observaciones'),
+            estado=sanitized['estado'],
+            fecha_inicio=sanitized['fecha_inicio'] or now,
+            fecha_fin=sanitized.get('fecha_fin'),
+            resuelto_en=now if sanitized['estado'] == 'resuelta' else None,
+            usuario_registro=sanitized.get('usuario_registro'),
+            creado_en=now,
+            actualizado_en=now,
+        )
+        db.add(sancion)
+        db.commit()
+        db.refresh(sancion)
+        return jsonify({
+            "ok": True,
+            "sancion": sancion_to_dict(sancion, tipo=sanitized.get('tipo'), usuario=sanitized.get('usuario'),
+                                       prestamo=sanitized.get('prestamo'),
+                                       causa=sanitized.get('causa_obj'))
+        }), 201
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al crear sanción: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+@app.put('/api/sanciones/<sancion_id>')
+def sancion_actualizar(sancion_id: str):
+    data = request.get_json(force=True, silent=True) or {}
+    db = SessionLocal()
+    try:
+        sancion = db.get(SancionDB, sancion_id)
+        if not sancion:
+            return jsonify({"ok": False, "error": "Sanción no encontrada"}), 404
+
+        errores, sanitized = validar_sancion_payload(data, db, existente=sancion)
+        if errores:
+            return jsonify({"ok": False, "errores": errores}), 400
+
+        sancion.tipo_id = sanitized['tipo_id']
+        sancion.id_usuario = sanitized['id_usuario']
+        sancion.id_prestamo = sanitized.get('id_prestamo')
+        sancion.causa_id = sanitized.get('causa_id')
+        sancion.causa = sanitized.get('causa_texto', sancion.causa)
+        sancion.observaciones = sanitized.get('observaciones')
+        sancion.estado = sanitized['estado']
+        sancion.fecha_inicio = sanitized['fecha_inicio'] or sancion.fecha_inicio
+        sancion.fecha_fin = sanitized.get('fecha_fin')
+        if sancion.estado == 'resuelta' and not sancion.resuelto_en:
+            sancion.resuelto_en = datetime.utcnow()
+        elif sancion.estado != 'resuelta':
+            sancion.resuelto_en = None
+        sancion.usuario_registro = sanitized.get('usuario_registro') or sancion.usuario_registro
+        sancion.actualizado_en = datetime.utcnow()
+
+        db.commit()
+        db.refresh(sancion)
+
+        return jsonify({
+            "ok": True,
+            "sancion": sancion_to_dict(
+                sancion,
+                tipo=sanitized.get('tipo') or db.get(SancionTipoDB, sancion.tipo_id),
+                usuario=sanitized.get('usuario') or db.get(UserDB, sancion.id_usuario),
+                prestamo=sanitized.get('prestamo') or (db.get(PrestamoDB, sancion.id_prestamo) if sancion.id_prestamo else None),
+                causa=sanitized.get('causa_obj') or (db.get(SancionCausaDB, sancion.causa_id) if sancion.causa_id else None)
+            )
+        })
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al actualizar sanción: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+@app.delete('/api/sanciones/<sancion_id>')
+def sancion_eliminar(sancion_id: str):
+    db = SessionLocal()
+    try:
+        sancion = db.get(SancionDB, sancion_id)
+        if not sancion:
+            return jsonify({"ok": False, "error": "Sanción no encontrada"}), 404
+        db.delete(sancion)
+        db.commit()
+        return jsonify({"ok": True, "mensaje": "Sanción eliminada correctamente"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"ok": False, "error": f"Error al eliminar sanción: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
 def create_app():
     return app
 
@@ -2236,6 +2815,47 @@ def migrar_base_datos():
                 print("✓ Tabla sancion_tipo creada")
             except Exception as e:
                 print(f"Error creando tabla sancion_tipo: {e}")
+
+        # Crear tabla sanciones si no existe
+        try:
+            db.execute(text("SELECT 1 FROM sanciones LIMIT 1"))
+        except Exception:
+            try:
+                db.execute(text("""
+                    CREATE TABLE sanciones (
+                        id TEXT PRIMARY KEY,
+                        tipo_id TEXT NOT NULL,
+                        id_usuario TEXT NOT NULL,
+                        id_prestamo TEXT,
+                        causa TEXT NOT NULL,
+                        observaciones TEXT,
+                        estado TEXT NOT NULL DEFAULT 'activa',
+                        fecha_inicio TEXT NOT NULL,
+                        fecha_fin TEXT,
+                        resuelto_en TEXT,
+                        usuario_registro TEXT,
+                        creado_en TEXT NOT NULL,
+                        actualizado_en TEXT NOT NULL
+                    )
+                """))
+                db.commit()
+                print("✓ Tabla sanciones creada")
+            except Exception as e:
+                print(f"Error creando tabla sanciones: {e}")
+        
+        # Asegurar columnas recientes en sanciones (causa_id)
+        try:
+            result = db.execute(text("PRAGMA table_info(sanciones)"))
+            columnas = {row[1] for row in result.fetchall()}
+            if 'causa_id' not in columnas:
+                print("Agregando columna causa_id a la tabla sanciones...")
+                db.execute(text("ALTER TABLE sanciones ADD COLUMN causa_id TEXT"))
+                db.commit()
+                print("✓ Columna causa_id agregada correctamente")
+        except Exception as e:
+            print(f"Error verificando columna causa_id: {e}")
+            db.rollback()
+        
         
         # Crear tabla libro_historial si no existe
         try:
